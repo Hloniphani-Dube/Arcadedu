@@ -16,7 +16,7 @@ import { getSubject, getTopic, getNode } from '../game/atlas'
 import {
   useApp,
   selectLevel,
-  selectSubjectUnlocked,
+  selectNodeUnlocked,
   selectSubjectProgress,
 } from '../store'
 import { AriaSpeech, type AriaLine } from '../components/AriaSpeech'
@@ -91,7 +91,9 @@ export function Challenge() {
   }, [node])
 
   if (!subject || !topic || !node) return <Navigate to="/" replace />
-  if (!selectSubjectUnlocked(app, subject.id)) return <Navigate to="/" replace />
+  // Levels run in order — bounce direct links to a not-yet-reached node.
+  if (!selectNodeUnlocked(app, subject.id, topic.id, node.id))
+    return <Navigate to={`/s/${subject.id}/${topic.id}`} replace />
 
   const backToPath = `/s/${subject.id}/${topic.id}`
 

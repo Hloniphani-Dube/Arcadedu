@@ -1,7 +1,7 @@
 import { useMemo } from 'react'
 import { Link, Navigate, useParams } from 'react-router-dom'
 import { motion } from 'framer-motion'
-import { ArrowLeft, ChevronRight, Lock, Check } from 'lucide-react'
+import { ArrowLeft, ChevronRight, Check } from 'lucide-react'
 import { getSubject } from '../game/atlas'
 import { useApp, selectSubjectUnlocked, selectTopicState } from '../store'
 import { Panel } from '../components/ui'
@@ -13,16 +13,12 @@ export function Country() {
 
   const topicStates = useMemo(() => {
     if (!subject) return []
-    return subject.topics.map((t, i) => {
+    return subject.topics.map((t) => {
       const st = selectTopicState(app, subject.id, t.id)
       const done = st.completed.length >= t.nodes.length
       const started = st.completed.length > 0
-      // topics unlock in order: first is open, next opens when the previous is done
-      const prevDone =
-        i === 0 ||
-        selectTopicState(app, subject.id, subject.topics[i - 1].id).completed.length >=
-          subject.topics[i - 1].nodes.length
-      return { topic: t, done, started, unlocked: prevDone, cleared: st.completed.length }
+      // Every topic is open — you can start anywhere in a world.
+      return { topic: t, done, started, cleared: st.completed.length }
     })
   }, [app, subject])
 
@@ -62,7 +58,7 @@ export function Country() {
       </header>
 
       <div className="flex flex-col gap-3">
-        {topicStates.map(({ topic, done, started, unlocked, cleared }, i) => (
+        {topicStates.map(({ topic, done, started, cleared }, i) => (
           <motion.div
             key={topic.id}
             initial={{ opacity: 0, y: 8 }}
@@ -78,7 +74,6 @@ export function Country() {
               cleared={cleared}
               done={done}
               started={started}
-              unlocked={unlocked}
             />
           </motion.div>
         ))}
@@ -96,7 +91,6 @@ function TopicRow({
   cleared,
   done,
   started,
-  unlocked,
 }: {
   subjectId: string
   topicId: string
@@ -106,38 +100,25 @@ function TopicRow({
   cleared: number
   done: boolean
   started: boolean
-  unlocked: boolean
 }) {
-  const inner = (
-    <Panel
-      className={`flex items-center gap-4 p-4 transition ${
-        unlocked ? 'hover:border-mana' : 'opacity-60'
-      }`}
-    >
-      <div className="min-w-0 flex-1">
-        <div className="flex items-center gap-2">
-          <span className="font-bold">{name}</span>
-          {done && <Check className="h-4 w-4 text-heal" />}
-          {!unlocked && <Lock className="h-4 w-4 text-muted" />}
+  return (
+    <Link to={`/s/${subjectId}/${topicId}`} className="block">
+      <Panel className="flex items-center gap-4 p-4 transition hover:border-mana">
+        <div className="min-w-0 flex-1">
+          <div className="flex items-center gap-2">
+            <span className="font-bold">{name}</span>
+            {done && <Check className="h-4 w-4 text-heal" />}
+          </div>
+          <p className="mt-1 truncate text-sm text-muted">{blurb}</p>
+          <div className="mt-1 text-xs text-muted">
+            {cleared} / {total} challenges cleared
+          </div>
         </div>
-        <p className="mt-1 truncate text-sm text-muted">{blurb}</p>
-        <div className="mt-1 text-xs text-muted">
-          {cleared} / {total} challenges cleared
-        </div>
-      </div>
-      {unlocked && (
         <span className="flex items-center gap-1 text-sm font-semibold text-mana-bright">
           {done ? 'Replay' : started ? 'Continue' : 'Start'}
           <ChevronRight className="h-4 w-4" />
         </span>
-      )}
-    </Panel>
-  )
-
-  if (!unlocked) return inner
-  return (
-    <Link to={`/s/${subjectId}/${topicId}`} className="block">
-      {inner}
+      </Panel>
     </Link>
   )
 }

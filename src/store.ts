@@ -1,6 +1,6 @@
 import { create } from 'zustand'
 import { levelForXp } from './game/engine'
-import { DEFAULT_UNLOCKED, SUBJECTS, getSubject, getTopic } from './game/atlas'
+import { DEFAULT_UNLOCKED, getSubject, getTopic } from './game/atlas'
 import {
   persistProfile,
   persistSubject,
@@ -52,7 +52,7 @@ interface AppState {
 
   /** Mark a node cleared and advance `current` to the next node. */
   completeNode: (subjectId: string, topicId: string, nodeId: string) => void
-  /** Record a full topic/boss clear for a subject and unlock any dependants. */
+  /** Record a full topic/boss clear for a subject (drives the skill rank). */
   recordClear: (subjectId: string) => void
 }
 
@@ -124,26 +124,12 @@ export const useApp = create<AppState>()((set, get) => ({
   recordClear: (subjectId) => {
     const cur = get().subjects[subjectId] ?? { unlocked: true, clears: 0 }
     const clears = cur.clears + 1
-    const patch: Record<string, SubjectState> = {
-      [subjectId]: { unlocked: true, clears },
-    }
-    // unlock any subject that was waiting on this one
-    for (const s of getUnlockTargets(subjectId)) {
-      if (!get().subjects[s]?.unlocked) patch[s] = { unlocked: true, clears: 0 }
-    }
-    set((s) => ({ subjects: { ...s.subjects, ...patch } }))
-    const uid = get().userId
-    void persistSubject(uid, subjectId, { unlocked: true, clears })
-    for (const [id, st] of Object.entries(patch)) {
-      if (id !== subjectId) void persistSubject(uid, id, { unlocked: st.unlocked, clears: st.clears })
-    }
+    set((s) => ({
+      subjects: { ...s.subjects, [subjectId]: { unlocked: true, clears } },
+    }))
+    void persistSubject(get().userId, subjectId, { unlocked: true, clears })
   },
 }))
-
-/** ids of subjects whose `requires` points at `subjectId`. */
-function getUnlockTargets(subjectId: string): string[] {
-  return SUBJECTS.filter((s) => s.requires === subjectId).map((s) => s.id)
-}
 
 // --- selectors ---------------------------------------------------------------
 
@@ -164,7 +150,28 @@ export function selectTopicState(
 }
 
 export function selectSubjectUnlocked(s: AppState, subjectId: string): boolean {
-  return s.subjects[subjectId]?.unlocked ?? !getSubject(subjectId)?.requires
+  // Worlds are never gated; kept as a selector so screen guards stay declarative.
+  // (No code path ever persists `unlocked: false`, so this is effectively true.)
+  return s.subjects[subjectId]?.unlocked ?? true
+}
+
+/**
+ * Levels inside a topic run in sequence: a node is playable only once every
+ * earlier node in the same topic has been cleared (node 0 is always open, and
+ * cleared nodes stay open for replay).
+ */
+export function selectNodeUnlocked(
+  s: AppState,
+  subjectId: string,
+  topicId: string,
+  nodeId: string,
+): boolean {
+  const topic = getTopic(subjectId, topicId)
+  if (!topic) return false
+  const idx = topic.nodes.findIndex((n) => n.id === nodeId)
+  if (idx <= 0) return idx === 0
+  const done = new Set(selectTopicState(s, subjectId, topicId).completed)
+  return topic.nodes.slice(0, idx).every((n) => done.has(n.id))
 }
 
 /** 0..1 completion across all of a subject's topic nodes. */

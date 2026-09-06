@@ -39,8 +39,6 @@ export interface Subject {
   center: [number, number]
   /** SVG path `d` for the country outline. */
   region: string
-  /** Subject that must be cleared before this one unlocks. */
-  requires?: string
   topics: Topic[]
 }
 
@@ -140,7 +138,6 @@ export const SUBJECTS: Subject[] = [
     continent: 'Numeria',
     center: [165, 400],
     region: blob(165, 400, 88, 7),
-    requires: 'algebra',
     topics: [
       {
         id: 'triangles',
@@ -211,7 +208,6 @@ export const SUBJECTS: Subject[] = [
     continent: 'Mechanica',
     center: [545, 335],
     region: blob(545, 335, 92, 17),
-    requires: 'physics',
     topics: [
       {
         id: 'algorithms',
@@ -335,5 +331,6 @@ export function getNode(
   return getTopic(subjectId, topicId)?.nodes.find((n) => n.id === nodeId)
 }
 
-/** Subjects unlocked from the start (no prerequisite). */
-export const DEFAULT_UNLOCKED = SUBJECTS.filter((s) => !s.requires).map((s) => s.id)
+/** Every subject is open from the start — worlds and topics are never gated,
+ *  only the levels inside a topic run in sequence. */
+export const DEFAULT_UNLOCKED = SUBJECTS.map((s) => s.id)

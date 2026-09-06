@@ -1,19 +1,13 @@
 import { useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { motion } from 'framer-motion'
-import { Lock, Check, MapPin } from 'lucide-react'
+import { Check, MapPin } from 'lucide-react'
 import {
   SUBJECTS,
   CONTINENTS,
   ATLAS_VIEWBOX,
-  getSubject,
   type Subject,
 } from '../game/atlas'
-import {
-  useApp,
-  selectSubjectUnlocked,
-  selectSubjectProgress,
-} from '../store'
+import { useApp, selectSubjectProgress } from '../store'
 import { Panel } from '../components/ui'
 
 const MIN_SCALE = 0.7
@@ -24,16 +18,14 @@ export function Atlas() {
   const app = useApp()
 
   const [hovered, setHovered] = useState<string | null>(null)
-  const [notice, setNotice] = useState<string | null>(null)
   const [view, setView] = useState({ x: 0, y: 0, scale: 1 })
   const drag = useRef<{ x: number; y: number; vx: number; vy: number } | null>(null)
   const svgRef = useRef<SVGSVGElement>(null)
 
   // recompute against live state
   const stateOf = (s: Subject) => {
-    const unlocked = selectSubjectUnlocked(app, s.id)
     const progress = selectSubjectProgress(app, s.id)
-    return { unlocked, progress, done: progress >= 1 }
+    return { progress, done: progress >= 1 }
   }
 
   function onWheel(e: React.WheelEvent) {
@@ -59,13 +51,6 @@ export function Atlas() {
   }
 
   function openSubject(s: Subject) {
-    const { unlocked } = stateOf(s)
-    if (!unlocked) {
-      const req = getSubject(s.requires)
-      setNotice(`${s.name} unlocks when you clear ${req?.name ?? 'its prerequisite'}.`)
-      window.setTimeout(() => setNotice(null), 2600)
-      return
-    }
     navigate(`/s/${s.id}`)
   }
 
@@ -161,15 +146,13 @@ export function Atlas() {
               ))}
 
               {SUBJECTS.map((s) => {
-                const { unlocked, progress, done } = stateOf(s)
+                const { progress, done } = stateOf(s)
                 const isHover = hovered === s.id
-                const fill = !unlocked
-                  ? 'var(--color-panel-2)'
-                  : done
-                    ? 'var(--color-heal)'
-                    : progress > 0
-                      ? 'var(--color-mana)'
-                      : 'var(--color-panel)'
+                const fill = done
+                  ? 'var(--color-heal)'
+                  : progress > 0
+                    ? 'var(--color-mana)'
+                    : 'var(--color-panel)'
                 return (
                   <g
                     key={s.id}
@@ -178,16 +161,15 @@ export function Atlas() {
                     onMouseLeave={() => setHovered(null)}
                     className="cursor-pointer"
                     role="button"
-                    aria-label={`${s.name}${unlocked ? '' : ' (locked)'}`}
+                    aria-label={s.name}
                   >
                     <path
                       d={s.region}
                       fill={fill}
-                      fillOpacity={unlocked ? (progress > 0 ? 0.28 : 0.9) : 0.5}
-                      stroke={unlocked ? 'var(--color-mana-bright)' : 'var(--color-edge)'}
+                      fillOpacity={progress > 0 ? 0.28 : 0.9}
+                      stroke="var(--color-mana-bright)"
                       strokeWidth={isHover ? 3 : 1.6}
-                      strokeDasharray={unlocked ? undefined : '6 5'}
-                      filter={isHover && unlocked ? 'url(#glow)' : undefined}
+                      filter={isHover ? 'url(#glow)' : undefined}
                       style={{ transition: 'stroke-width .15s ease' }}
                     />
                     <text
@@ -201,11 +183,6 @@ export function Atlas() {
                     >
                       {s.name}
                     </text>
-                    {!unlocked && (
-                      <g transform={`translate(${s.center[0] - 8} ${s.center[1] + 10})`}>
-                        <Lock width={16} height={16} color="var(--color-muted)" />
-                      </g>
-                    )}
                     {done && (
                       <g transform={`translate(${s.center[0] - 8} ${s.center[1] + 10})`}>
                         <Check width={16} height={16} color="var(--color-on-accent)" />
@@ -216,16 +193,6 @@ export function Atlas() {
               })}
             </g>
           </svg>
-
-          {notice && (
-            <motion.div
-              initial={{ opacity: 0, y: 8 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="absolute inset-x-0 bottom-3 mx-auto w-fit rounded-lg border border-edge bg-panel px-3 py-1.5 text-xs shadow-lg"
-            >
-              {notice}
-            </motion.div>
-          )}
         </Panel>
 
         <div className="flex flex-col gap-3">
@@ -234,7 +201,7 @@ export function Atlas() {
               <HoverCard subject={hoverSubject} state={stateOf(hoverSubject)} />
             ) : (
               <p className="text-sm text-muted">
-                Hover a region to preview it. Locked regions show what unlocks them.
+                Hover a region to preview it. Every world is open — sail wherever you like.
               </p>
             )}
           </Panel>
@@ -244,7 +211,6 @@ export function Atlas() {
             <LegendRow swatch="var(--color-panel)" label="Ready to explore" />
             <LegendRow swatch="var(--color-mana)" label="In progress" faded />
             <LegendRow swatch="var(--color-heal)" label="Completed" />
-            <LegendRow swatch="var(--color-panel-2)" label="Locked" dashed />
           </Panel>
         </div>
       </div>
@@ -257,9 +223,8 @@ function HoverCard({
   state,
 }: {
   subject: Subject
-  state: { unlocked: boolean; progress: number; done: boolean }
+  state: { progress: number; done: boolean }
 }) {
-  const req = getSubject(subject.requires)
   return (
     <div>
       <div className="flex items-center gap-2">
@@ -271,28 +236,21 @@ function HoverCard({
         {state.done && <Check className="ml-auto h-4 w-4 text-heal" />}
       </div>
       <p className="mt-2 text-sm text-muted">{subject.blurb}</p>
-      {state.unlocked ? (
-        <div className="mt-3">
-          <div className="mb-1 flex justify-between text-xs text-muted">
-            <span>Progress</span>
-            <span>{Math.round(state.progress * 100)}%</span>
-          </div>
-          <div className="h-2 w-full overflow-hidden rounded-full border border-edge bg-void">
-            <div
-              className="h-full rounded-full bg-mana"
-              style={{ width: `${Math.round(state.progress * 100)}%` }}
-            />
-          </div>
-          <div className="mt-2 flex items-center gap-1 text-xs text-mana-bright">
-            <MapPin className="h-3.5 w-3.5" /> Click the region to enter
-          </div>
+      <div className="mt-3">
+        <div className="mb-1 flex justify-between text-xs text-muted">
+          <span>Progress</span>
+          <span>{Math.round(state.progress * 100)}%</span>
         </div>
-      ) : (
-        <div className="mt-3 flex items-center gap-1.5 text-xs text-muted">
-          <Lock className="h-3.5 w-3.5" />
-          Unlocks after clearing {req?.name ?? 'its prerequisite'}
+        <div className="h-2 w-full overflow-hidden rounded-full border border-edge bg-void">
+          <div
+            className="h-full rounded-full bg-mana"
+            style={{ width: `${Math.round(state.progress * 100)}%` }}
+          />
         </div>
-      )}
+        <div className="mt-2 flex items-center gap-1 text-xs text-mana-bright">
+          <MapPin className="h-3.5 w-3.5" /> Click the region to enter
+        </div>
+      </div>
     </div>
   )
 }
