@@ -7,7 +7,7 @@
 // Runs on the Vercel Edge runtime (Web `Request`/`Response`, `fetch`).
 // Env vars (Vercel Project Settings → Environment Variables):
 //   GEMINI_API_KEY   required — key from https://aistudio.google.com/apikey
-//   GEMINI_MODEL     optional — defaults to gemini-2.5-flash
+//   GEMINI_MODEL     optional — defaults to gemini-3.6-flash
 //
 // The equivalent Supabase Edge Function in supabase/functions/ai/ is now legacy;
 // the deployed app calls this one via VITE_AI_ENDPOINT=/api/ai.
@@ -103,7 +103,9 @@ async function gemini(
       contents: [{ role: 'user', parts: [{ text: user }] }],
       generationConfig: {
         temperature: schema ? 0.7 : 0.6,
-        maxOutputTokens: 700,
+        // Gemini 3.x spends "thinking" tokens from this same budget, so keep it
+        // generous or structured replies get truncated mid-JSON.
+        maxOutputTokens: 4096,
         ...(schema
           ? { responseMimeType: 'application/json', responseSchema: schema }
           : {}),
@@ -115,11 +117,36 @@ async function gemini(
     throw new Error(`Gemini ${res.status}: ${await res.text()}`)
   }
   const data = await res.json()
+  const cand = data?.candidates?.[0]
   const text: string | undefined =
-    data?.candidates?.[0]?.content?.parts?.map((p: { text?: string }) => p.text)
-      .join('') ?? undefined
-  if (!text) throw new Error('Gemini returned no text')
+    cand?.content?.parts?.map((p: { text?: string }) => p.text).join('') ??
+    undefined
+  if (!text) {
+    throw new Error(
+      `Gemini returned no text (finishReason: ${cand?.finishReason ?? 'unknown'})`,
+    )
+  }
+  if (cand?.finishReason === 'MAX_TOKENS') {
+    throw new Error('Gemini response hit the token limit before completing')
+  }
   return text.trim()
+}
+
+// The model usually honours responseMimeType, but can still wrap JSON in ```json
+// fences or add stray prose. Parse leniently.
+function parseModelJson(text: string): Record<string, unknown> {
+  try {
+    return JSON.parse(text)
+  } catch {
+    const fenced = text.match(/```(?:json)?\s*([\s\S]*?)```/i)
+    const body = (fenced ? fenced[1] : text).trim()
+    const start = body.indexOf('{')
+    const end = body.lastIndexOf('}')
+    if (start !== -1 && end > start) {
+      return JSON.parse(body.slice(start, end + 1))
+    }
+    throw new Error(`Model did not return valid JSON: ${text.slice(0, 200)}`)
+  }
 }
 
 const clamp01 = (n: unknown) =>
@@ -162,7 +189,7 @@ async function handleEnemyQuestion(c: Ctx) {
       ['question', 'expectedConcept'],
     ),
   )
-  const o = JSON.parse(text)
+  const o = parseModelJson(text)
   return {
     kind: 'enemy_question',
     question: String(o.question ?? ''),
@@ -187,7 +214,7 @@ async function handleBossChallenge(c: Ctx) {
 Return "question" (no solution) and "expectedConcept" (one sentence the grader uses).`,
     S.obj({ question: S.str, expectedConcept: S.str }, ['question', 'expectedConcept']),
   )
-  const o = JSON.parse(text)
+  const o = parseModelJson(text)
   return {
     kind: 'boss_challenge',
     phase,
@@ -224,7 +251,7 @@ Return JSON:
       ['correct', 'quality', 'feedback'],
     ),
   )
-  const o = JSON.parse(text)
+  const o = parseModelJson(text)
   return {
     kind: 'graded',
     correct: Boolean(o.correct),
