@@ -17,6 +17,30 @@ const AI_ENDPOINT = import.meta.env.VITE_AI_ENDPOINT as string | undefined
 
 export class AiError extends Error {}
 
+// The AI function returns 503 when Gemini itself is overloaded (and 429/502/504
+// for other transient hiccups). These are worth another try after a short wait.
+const RETRYABLE_STATUS = new Set([429, 502, 503, 504])
+const MAX_RETRIES = 2
+
+const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms))
+
+async function postWithRetry(url: string, body: unknown): Promise<Response> {
+  let res = await fetch(url, {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify(body),
+  })
+  for (let attempt = 1; attempt <= MAX_RETRIES && RETRYABLE_STATUS.has(res.status); attempt++) {
+    await sleep(1500 * attempt) // 1.5s, then 3s
+    res = await fetch(url, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify(body),
+    })
+  }
+  return res
+}
+
 export async function callAi(
   action: AiAction,
   context: AiRequestContext,
@@ -26,12 +50,11 @@ export async function callAi(
   try {
     // An explicit endpoint always wins (Vercel `/api/ai`, or a local serve URL).
     if (AI_ENDPOINT) {
-      const res = await fetch(AI_ENDPOINT, {
-        method: 'POST',
-        headers: { 'content-type': 'application/json' },
-        body: JSON.stringify(body),
-      })
+      const res = await postWithRetry(AI_ENDPOINT, body)
       if (!res.ok) {
+        if (RETRYABLE_STATUS.has(res.status)) {
+          throw new AiError('The AI is busy right now — give it a moment and try again.')
+        }
         throw new AiError(`AI function returned ${res.status}: ${await res.text()}`)
       }
       return (await res.json()) as AiResponse

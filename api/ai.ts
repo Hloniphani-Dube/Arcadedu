@@ -9,8 +9,11 @@
 // Edge would cap us at ~25s and 504 (FUNCTION_INVOCATION_TIMEOUT).
 //
 // Env vars (Vercel Project Settings → Environment Variables):
-//   GEMINI_API_KEY   required — key from https://aistudio.google.com/apikey
-//   GEMINI_MODEL     optional — defaults to gemini-3.6-flash
+//   GEMINI_API_KEY        required — key from https://aistudio.google.com/apikey
+//   GEMINI_MODEL          optional — defaults to gemini-3.6-flash
+//   GEMINI_FALLBACK_MODEL optional — tried when the primary model stays
+//                         overloaded; defaults to gemini-2.5-flash. Set to ""
+//                         to disable the fallback.
 //
 // The equivalent Supabase Edge Function in supabase/functions/ai/ is now legacy;
 // the deployed app calls this one via VITE_AI_ENDPOINT=/api/ai.
@@ -19,8 +22,32 @@ export const config = { maxDuration: 60 }
 
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY ?? ''
 const GEMINI_MODEL = process.env.GEMINI_MODEL ?? 'gemini-3.6-flash'
-const GEMINI_URL =
-  `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent`
+const GEMINI_FALLBACK_MODEL =
+  process.env.GEMINI_FALLBACK_MODEL ?? 'gemini-2.5-flash'
+const geminiUrl = (model: string) =>
+  `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`
+
+// Gemini load-shedding (503 UNAVAILABLE), rate limits (429) and transient 5xx
+// are all worth another try; a slow "thinking" call returning 503 fails fast,
+// so a couple of quick retries stay well inside maxDuration.
+const RETRYABLE_STATUS = new Set([429, 500, 502, 503, 504])
+const MAX_ATTEMPTS_PER_MODEL = 3
+const RETRY_BASE_MS = 500
+
+const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms))
+
+/** A Gemini call that failed. `retryable` means the failure was upstream load /
+ *  a transient error, not a bad request — the handler maps it to 503, not 502. */
+class GeminiError extends Error {
+  constructor(
+    message: string,
+    readonly status: number,
+    readonly retryable: boolean,
+  ) {
+    super(message)
+    this.name = 'GeminiError'
+  }
+}
 
 const CORS = {
   'Access-Control-Allow-Origin': '*',
@@ -89,31 +116,47 @@ const isLearnAction = (a: string): a is LearnAction => a in LEARN_RULES
 
 // --- gemini plumbing -----------------------------------------------------
 
-async function gemini(
+async function callGeminiOnce(
+  model: string,
   system: string,
   user: string,
   schema?: Record<string, unknown>,
 ): Promise<string> {
-  const res = await fetch(`${GEMINI_URL}?key=${GEMINI_API_KEY}`, {
-    method: 'POST',
-    headers: { 'content-type': 'application/json' },
-    body: JSON.stringify({
-      systemInstruction: { parts: [{ text: system }] },
-      contents: [{ role: 'user', parts: [{ text: user }] }],
-      generationConfig: {
-        temperature: schema ? 0.7 : 0.6,
-        // Gemini 3.x spends "thinking" tokens from this same budget, so keep it
-        // generous or structured replies get truncated mid-JSON.
-        maxOutputTokens: 4096,
-        ...(schema
-          ? { responseMimeType: 'application/json', responseSchema: schema }
-          : {}),
-      },
-    }),
-  })
+  let res: Response
+  try {
+    res = await fetch(`${geminiUrl(model)}?key=${GEMINI_API_KEY}`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({
+        systemInstruction: { parts: [{ text: system }] },
+        contents: [{ role: 'user', parts: [{ text: user }] }],
+        generationConfig: {
+          temperature: schema ? 0.7 : 0.6,
+          // Gemini 3.x spends "thinking" tokens from this same budget, so keep it
+          // generous or structured replies get truncated mid-JSON.
+          maxOutputTokens: 4096,
+          ...(schema
+            ? { responseMimeType: 'application/json', responseSchema: schema }
+            : {}),
+        },
+      }),
+    })
+  } catch (err) {
+    // DNS / socket / abort — never got a response, so retrying is reasonable.
+    throw new GeminiError(
+      `Gemini request failed: ${err instanceof Error ? err.message : String(err)}`,
+      0,
+      true,
+    )
+  }
 
   if (!res.ok) {
-    throw new Error(`Gemini ${res.status}: ${await res.text()}`)
+    const detail = await res.text()
+    throw new GeminiError(
+      `Gemini ${res.status}: ${detail}`,
+      res.status,
+      RETRYABLE_STATUS.has(res.status),
+    )
   }
   const data = await res.json()
   const cand = data?.candidates?.[0]
@@ -129,6 +172,40 @@ async function gemini(
     throw new Error('Gemini response hit the token limit before completing')
   }
   return text.trim()
+}
+
+/** Call Gemini with retry + backoff, then fail over to the fallback model.
+ *  Only transient failures (see `RETRYABLE_STATUS`) trigger a retry; a 4xx like
+ *  a malformed request throws straight through. */
+async function gemini(
+  system: string,
+  user: string,
+  schema?: Record<string, unknown>,
+): Promise<string> {
+  const models = [GEMINI_MODEL, GEMINI_FALLBACK_MODEL].filter(
+    (m, i, arr) => m && arr.indexOf(m) === i,
+  )
+
+  let lastError: unknown
+  for (const model of models) {
+    for (let attempt = 1; attempt <= MAX_ATTEMPTS_PER_MODEL; attempt++) {
+      try {
+        return await callGeminiOnce(model, system, user, schema)
+      } catch (err) {
+        lastError = err
+        if (!(err instanceof GeminiError) || !err.retryable) throw err
+        if (attempt < MAX_ATTEMPTS_PER_MODEL) {
+          // exponential backoff with jitter: ~0.5s, ~1s
+          await sleep(RETRY_BASE_MS * 2 ** (attempt - 1) + Math.random() * 250)
+        }
+      }
+    }
+    // this model stayed unavailable — try the next one
+  }
+
+  throw lastError instanceof Error
+    ? lastError
+    : new GeminiError('Gemini call failed', 503, true)
 }
 
 // The model usually honours responseMimeType, but can still wrap JSON in ```json
@@ -360,8 +437,15 @@ export default async function handler(req: VercelReq, res: VercelRes) {
     }
   } catch (err) {
     console.error(err)
+    // Upstream load / transient errors → 503 so the client can back off and
+    // retry; anything else is a genuine gateway failure → 502.
+    const overloaded = err instanceof GeminiError && err.retryable
+    if (overloaded) res.setHeader('Retry-After', '5')
     return res
-      .status(502)
-      .json({ error: err instanceof Error ? err.message : 'AI call failed' })
+      .status(overloaded ? 503 : 502)
+      .json({
+        error: err instanceof Error ? err.message : 'AI call failed',
+        ...(overloaded ? { retryable: true } : {}),
+      })
   }
 }
