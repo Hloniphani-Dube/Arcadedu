@@ -17,7 +17,7 @@ those grades into XP, HP, levels and world progression.
 | **Challenge** | [src/screens/Challenge.tsx](src/screens/Challenge.tsx) | The same AI generates & grades each node (boss = 3-phase mastery) |
 | **Learn mode** | [src/screens/LearnMode.tsx](src/screens/LearnMode.tsx) | AI can teach without handing over answers |
 | **Game engine** | [src/game/engine.ts](src/game/engine.ts) | Grades become an XP / level progression system |
-| **Auth + progress** | [src/auth/](src/auth/) · [src/lib/progress.ts](src/lib/progress.ts) | Per-user progress in Supabase (Google / magic-link), RLS-scoped |
+| **Auth + progress** | [src/auth/](src/auth/) · [src/lib/progress.ts](src/lib/progress.ts) | Per-user progress in Supabase (email magic-link), RLS-scoped |
 | **AI edge function** | [supabase/functions/ai/index.ts](supabase/functions/ai/index.ts) | The Gemini key stays server-side; actions are a closed set |
 
 The atlas content model lives in [src/game/atlas.ts](src/game/atlas.ts) — six subjects
@@ -73,9 +73,11 @@ supabase functions serve --env-file supabase/.env.local
 1. Run [supabase/migrations/0001_init_progress.sql](supabase/migrations/0001_init_progress.sql)
    — Dashboard → SQL editor, or `supabase db push`. It creates `profiles`,
    `subject_progress`, `topic_progress`, their RLS policies, and the new-user trigger.
-2. Dashboard → **Authentication → Providers**: enable **Google** (add an OAuth client).
-3. Dashboard → **Authentication → URL Configuration → Redirect URLs**: add
-   `http://localhost:5173` and your deployed origin.
+2. Dashboard → **Authentication → Providers**: make sure **Email** is enabled
+   (magic-link sign-in is the only method).
+3. Dashboard → **Authentication → URL Configuration**: set **Site URL** to your
+   deployed origin, and add both `http://localhost:5173/**` and
+   `https://<your-app>.vercel.app/**` to **Redirect URLs**.
 4. Set `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY` in `.env.local`
    (the `sb_publishable_…` key is the browser-safe anon/publishable key).
 

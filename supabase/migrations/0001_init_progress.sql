@@ -5,11 +5,12 @@
 --   • supabase db push   (if you've linked the project with the CLI)
 --
 -- Dashboard steps that are NOT sql (do these too):
---   1. Authentication → Providers → enable "Google" (add an OAuth client;
---      https://supabase.com/docs/guides/auth/social-login/auth-google).
---   2. Authentication → URL Configuration → add to "Redirect URLs":
---        http://localhost:5173
---        <your deployed origin, e.g. https://arcadedu.example.app>
+--   1. Authentication → Providers → make sure "Email" is enabled
+--      (magic-link sign-in is the only method).
+--   2. Authentication → URL Configuration → set "Site URL" to your deployed
+--      origin, and add to "Redirect URLs":
+--        http://localhost:5173/**
+--        <your deployed origin, e.g. https://arcadedu.example.app/**>
 --   3. Frontend env → copy .env.local.example to .env.local and set
 --        VITE_SUPABASE_URL, VITE_SUPABASE_ANON_KEY   (the sb_publishable_… key
 --        is the publishable/anon key and is safe to ship to the browser).

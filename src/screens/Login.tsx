@@ -12,35 +12,21 @@ export function Login() {
   const { session, loading, unconfigured } = useAuth()
   const [email, setEmail] = useState('')
   const [sent, setSent] = useState(false)
-  const [busy, setBusy] = useState<'google' | 'email' | null>(null)
+  const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
   if (!loading && session) return <Navigate to="/" replace />
 
-  async function google() {
-    if (!supabase) return
-    setBusy('google')
-    setError(null)
-    const { error } = await supabase.auth.signInWithOAuth({
-      provider: 'google',
-      options: { redirectTo: REDIRECT },
-    })
-    if (error) {
-      setError(error.message)
-      setBusy(null)
-    }
-  }
-
   async function magicLink(e?: React.FormEvent) {
     e?.preventDefault()
     if (!supabase || !email.trim()) return
-    setBusy('email')
+    setBusy(true)
     setError(null)
     const { error } = await supabase.auth.signInWithOtp({
       email: email.trim(),
       options: { emailRedirectTo: REDIRECT },
     })
-    setBusy(null)
+    setBusy(false)
     if (error) setError(error.message)
     else setSent(true)
   }
@@ -87,41 +73,28 @@ export function Login() {
               </button>
             </div>
           ) : (
-            <div className="flex flex-col gap-4">
-              <Btn variant="primary" className="w-full justify-center" onClick={google} disabled={busy !== null}>
+            <form onSubmit={magicLink} className="flex flex-col gap-2">
+              <label className="text-xs font-semibold uppercase tracking-wide text-muted">
+                Email
+              </label>
+              <div className="flex items-center gap-2 rounded-xl border border-edge bg-void px-3 focus-within:border-mana">
+                <Mail className="h-4 w-4 text-muted" />
+                <input
+                  type="email"
+                  required
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="you@example.com"
+                  className="w-full bg-transparent py-2.5 text-sm outline-none"
+                />
+              </div>
+              <Btn type="submit" className="mt-1 w-full justify-center" disabled={busy}>
                 <span className="flex items-center justify-center gap-2">
-                  <GoogleMark />
-                  {busy === 'google' ? 'Redirecting…' : 'Continue with Google'}
+                  {busy ? 'Sending…' : 'Send me a sign-in link'}
+                  <ArrowRight className="h-4 w-4" />
                 </span>
               </Btn>
-
-              <div className="flex items-center gap-3 text-xs text-muted">
-                <span className="h-px flex-1 bg-edge" /> or <span className="h-px flex-1 bg-edge" />
-              </div>
-
-              <form onSubmit={magicLink} className="flex flex-col gap-2">
-                <label className="text-xs font-semibold uppercase tracking-wide text-muted">
-                  Email
-                </label>
-                <div className="flex items-center gap-2 rounded-xl border border-edge bg-void px-3 focus-within:border-mana">
-                  <Mail className="h-4 w-4 text-muted" />
-                  <input
-                    type="email"
-                    required
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    placeholder="you@example.com"
-                    className="w-full bg-transparent py-2.5 text-sm outline-none"
-                  />
-                </div>
-                <Btn type="submit" className="mt-1 w-full justify-center" disabled={busy !== null}>
-                  <span className="flex items-center justify-center gap-2">
-                    {busy === 'email' ? 'Sending…' : 'Send me a sign-in link'}
-                    <ArrowRight className="h-4 w-4" />
-                  </span>
-                </Btn>
-              </form>
-            </div>
+            </form>
           )}
 
           {error && (
@@ -132,16 +105,5 @@ export function Login() {
         </Panel>
       </motion.div>
     </div>
-  )
-}
-
-function GoogleMark() {
-  return (
-    <svg viewBox="0 0 24 24" className="h-4 w-4" aria-hidden>
-      <path
-        fill="currentColor"
-        d="M12 11v2.8h4c-.2 1-1.4 3-4 3-2.4 0-4.4-2-4.4-4.5S9.6 7.8 12 7.8c1.4 0 2.3.6 2.8 1.1l1.9-1.8C15.5 6 13.9 5.3 12 5.3 8.1 5.3 5 8.4 5 12.3s3.1 7 7 7c4 0 6.7-2.8 6.7-6.8 0-.5 0-.8-.1-1.2z"
-      />
-    </svg>
   )
 }
