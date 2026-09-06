@@ -20,6 +20,7 @@ import {
   selectSubjectProgress,
 } from '../store'
 import { AriaSpeech, type AriaLine } from '../components/AriaSpeech'
+import { QuestionCard } from '../components/QuestionCard'
 import { Btn, Panel, Spinner } from '../components/ui'
 
 const BOSS_TRIALS = ['solve', 'twist', 'explain'] as const
@@ -45,6 +46,7 @@ export function Challenge() {
   const [phase, setPhase] = useState<Phase>('loading')
   const [trial, setTrial] = useState(0)
   const [pendingTrial, setPendingTrial] = useState(0)
+  const [narrative, setNarrative] = useState('')
   const [question, setQuestion] = useState('')
   const [expectedConcept, setExpectedConcept] = useState('')
   const [answer, setAnswer] = useState('')
@@ -65,14 +67,17 @@ export function Challenge() {
     setError(null)
     setAnswer('')
     setGrade(null)
+    setNarrative('')
     const ctx = { subject: subject.name, topic: topic.name, level }
     try {
       if (node.kind === 'boss') {
         const c = await generateBossChallenge({ ...ctx, bossPhase: BOSS_TRIALS[whichTrial] })
+        setNarrative(c.narrative)
         setQuestion(c.question)
         setExpectedConcept(c.expectedConcept)
       } else {
         const q = await generateEnemyQuestion({ ...ctx, difficulty: node.tier })
+        setNarrative(q.narrative)
         setQuestion(q.question)
         setExpectedConcept(q.expectedConcept)
       }
@@ -216,7 +221,7 @@ export function Challenge() {
 
             {phase === 'answering' && (
               <motion.div key="a" initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className="mt-4">
-                <div className="rounded-xl border border-edge bg-void/60 p-3 text-sm">{question}</div>
+                <QuestionCard narrative={narrative} question={question} />
                 <textarea
                   value={answer}
                   onChange={(e) => setAnswer(e.target.value)}

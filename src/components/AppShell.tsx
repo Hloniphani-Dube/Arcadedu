@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { Outlet, Link } from 'react-router-dom'
-import { Globe2, GraduationCap, Swords, User, LogOut } from 'lucide-react'
+import { Globe2, GraduationCap, BookOpen, Swords, User, LogOut } from 'lucide-react'
 import { Sidebar, SidebarBody, SidebarLink } from './ui/sidebar'
 import { ThemeMenu } from './ui/theme-menu'
 import { useAuth } from '../auth/auth-context'
@@ -9,6 +9,7 @@ import { useApp } from '../store'
 const LINKS = [
   { label: 'Atlas', href: '/', icon: <Globe2 className="h-5 w-5 flex-shrink-0" />, end: true },
   { label: 'Learn', href: '/learn', icon: <GraduationCap className="h-5 w-5 flex-shrink-0" /> },
+  { label: 'Story', href: '/story', icon: <BookOpen className="h-5 w-5 flex-shrink-0" /> },
   { label: 'Quests', href: '/quests', icon: <Swords className="h-5 w-5 flex-shrink-0" /> },
   { label: 'Profile', href: '/profile', icon: <User className="h-5 w-5 flex-shrink-0" /> },
 ]

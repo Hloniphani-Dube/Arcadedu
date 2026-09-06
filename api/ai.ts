@@ -48,6 +48,7 @@ interface Ctx {
   expectedConcept?: string
   difficulty?: string
   bossPhase?: 'solve' | 'twist' | 'explain'
+  chapter?: string
 }
 
 const jsonResponse = (body: unknown, status = 200) =>
@@ -182,19 +183,51 @@ async function handleEnemyQuestion(c: Ctx) {
   const text = await gemini(
     `${PREAMBLE(c)}\nYou are generating a battle challenge for the game.`,
     `Create ONE ${c.difficulty ?? 'medium'} question that tests UNDERSTANDING (not recall) of ${c.topic}.
-"question" must be solvable in a few lines and contain no solution.
-"expectedConcept" is one sentence naming the correct approach / answer the grader should look for.`,
+Return JSON with these fields kept strictly separate:
+- "narrative": ONE short sentence of game flavour introducing the ${c.difficulty ?? 'medium'} foe / scene. No numbers, no part of the problem here.
+- "question": the actual problem, self-contained, solvable in a few lines, NO solution and NO story wording.
+- "expectedConcept": one sentence naming the correct approach / answer the grader should look for.`,
     S.obj(
-      { question: S.str, expectedConcept: S.str, difficulty: S.str },
-      ['question', 'expectedConcept'],
+      { narrative: S.str, question: S.str, expectedConcept: S.str, difficulty: S.str },
+      ['narrative', 'question', 'expectedConcept'],
     ),
   )
   const o = parseModelJson(text)
   return {
     kind: 'enemy_question',
+    narrative: String(o.narrative ?? ''),
     question: String(o.question ?? ''),
     expectedConcept: String(o.expectedConcept ?? ''),
     difficulty: c.difficulty ?? 'medium',
+  }
+}
+
+async function handleStoryQuestion(c: Ctx) {
+  const region = c.chapter ?? c.topic
+  const text = await gemini(
+    `You are the Narrator of "Story I: The Long Way Round", a travelling tale in a learning game.
+The player is passing through a region called "${region}". Keep the world whimsical and consistent.
+Write plain text, no markdown headings.`,
+    `This is a ${c.difficulty ?? 'easy'} brain-teaser stop on the journey. It is GENERAL KNOWLEDGE or
+lateral thinking — NOT school subject material. Good kinds: counting, geography, calendars/time,
+wordplay, simple logic, "how many…", pattern / "what comes next", well-known facts and superlatives.
+It must be solvable by a thoughtful person with no special study.
+
+Return JSON with these fields kept strictly separate:
+- "narrative": 1–2 sentences of story flavour that fit the region "${region}". No question in here.
+- "question": ONE self-contained puzzle. Put the WHOLE puzzle here and nothing else. No solution.
+- "expectedConcept": one sentence stating the correct answer / key insight the grader checks for.`,
+    S.obj(
+      { narrative: S.str, question: S.str, expectedConcept: S.str },
+      ['narrative', 'question', 'expectedConcept'],
+    ),
+  )
+  const o = parseModelJson(text)
+  return {
+    kind: 'story_question',
+    narrative: String(o.narrative ?? ''),
+    question: String(o.question ?? ''),
+    expectedConcept: String(o.expectedConcept ?? ''),
   }
 }
 
@@ -211,13 +244,20 @@ async function handleBossChallenge(c: Ctx) {
   const text = await gemini(
     `${PREAMBLE(c)}\nYou are the boss of the ${c.subject} world, testing mastery.`,
     `Boss trial phase: ${phase}. ${BOSS_PHASE_BRIEF[phase]}
-Return "question" (no solution) and "expectedConcept" (one sentence the grader uses).`,
-    S.obj({ question: S.str, expectedConcept: S.str }, ['question', 'expectedConcept']),
+Return JSON with these fields kept strictly separate:
+- "narrative": ONE short sentence of boss-fight flavour for this trial. No part of the problem here.
+- "question": the actual trial problem, self-contained, NO solution and NO story wording.
+- "expectedConcept": one sentence the grader uses.`,
+    S.obj(
+      { narrative: S.str, question: S.str, expectedConcept: S.str },
+      ['narrative', 'question', 'expectedConcept'],
+    ),
   )
   const o = parseModelJson(text)
   return {
     kind: 'boss_challenge',
     phase,
+    narrative: String(o.narrative ?? ''),
     question: String(o.question ?? ''),
     expectedConcept: String(o.expectedConcept ?? ''),
   }
@@ -289,6 +329,8 @@ export default async function handler(req: Request): Promise<Response> {
     switch (action) {
       case 'generate_enemy_question':
         return jsonResponse(await handleEnemyQuestion(context))
+      case 'generate_story_question':
+        return jsonResponse(await handleStoryQuestion(context))
       case 'generate_boss_challenge':
         return jsonResponse(await handleBossChallenge(context))
       case 'grade_battle_answer':

@@ -1,6 +1,7 @@
 import { create } from 'zustand'
 import { levelForXp } from './game/engine'
 import { DEFAULT_UNLOCKED, getSubject, getTopic } from './game/atlas'
+import { STORY_ONE, getChapter } from './game/story'
 import {
   persistProfile,
   persistSubject,
@@ -54,7 +55,12 @@ interface AppState {
   completeNode: (subjectId: string, topicId: string, nodeId: string) => void
   /** Record a full topic/boss clear for a subject (drives the skill rank). */
   recordClear: (subjectId: string) => void
+  /** Story Mode: mark a chapter's level cleared. Persists like a topic. */
+  completeStoryLevel: (chapterId: string, levelId: string) => void
 }
+
+/** Story Mode reuses the topic tables under this synthetic subject id. */
+export const STORY_SUBJECT_ID = STORY_ONE.id
 
 export const useApp = create<AppState>()((set, get) => ({
   userId: null,
@@ -129,6 +135,28 @@ export const useApp = create<AppState>()((set, get) => ({
     }))
     void persistSubject(get().userId, subjectId, { unlocked: true, clears })
   },
+
+  completeStoryLevel: (chapterId, levelId) => {
+    const chapter = getChapter(chapterId)
+    if (!chapter) return
+    const key = topicKey(STORY_SUBJECT_ID, chapterId)
+    const prev = get().topics[key] ?? {
+      completed: [],
+      current: chapter.levels[0]?.id ?? null,
+    }
+    if (prev.completed.includes(levelId)) return
+
+    const completed = [...prev.completed, levelId]
+    const idx = chapter.levels.findIndex((l) => l.id === levelId)
+    const nextLevel = chapter.levels[idx + 1]?.id ?? null
+    const state: TopicState = { completed, current: nextLevel ?? levelId }
+    set((s) => ({ topics: { ...s.topics, [key]: state } }))
+    void persistTopic(get().userId, STORY_SUBJECT_ID, chapterId, {
+      completed_nodes: completed,
+      current_node: state.current,
+      completed_at: nextLevel ? null : new Date().toISOString(),
+    })
+  },
 }))
 
 // --- selectors ---------------------------------------------------------------
@@ -183,6 +211,51 @@ export function selectSubjectProgress(s: AppState, subjectId: string): number {
   for (const t of subject.topics) {
     total += t.nodes.length
     done += (s.topics[topicKey(subjectId, t.id)]?.completed.length ?? 0)
+  }
+  return total ? done / total : 0
+}
+
+// --- Story Mode selectors --------------------------------------------------
+
+const storyChapterCompleted = (s: AppState, chapterId: string): string[] =>
+  s.topics[topicKey(STORY_SUBJECT_ID, chapterId)]?.completed ?? []
+
+export function selectStoryChapterDone(s: AppState, chapterId: string): boolean {
+  const chapter = getChapter(chapterId)
+  if (!chapter) return false
+  return storyChapterCompleted(s, chapterId).length >= chapter.levels.length
+}
+
+/** Chapter N opens once chapter N-1 is fully cleared. Chapter 1 is always open. */
+export function selectStoryChapterUnlocked(s: AppState, chapterId: string): boolean {
+  const chapter = getChapter(chapterId)
+  if (!chapter) return false
+  if (chapter.index === 0) return true
+  const prev = STORY_ONE.chapters[chapter.index - 1]
+  return selectStoryChapterDone(s, prev.id)
+}
+
+/** Levels run in order within a chapter (cleared ones stay open for replay). */
+export function selectStoryLevelUnlocked(
+  s: AppState,
+  chapterId: string,
+  levelId: string,
+): boolean {
+  const chapter = getChapter(chapterId)
+  if (!chapter || !selectStoryChapterUnlocked(s, chapterId)) return false
+  const idx = chapter.levels.findIndex((l) => l.id === levelId)
+  if (idx <= 0) return idx === 0
+  const done = new Set(storyChapterCompleted(s, chapterId))
+  return chapter.levels.slice(0, idx).every((l) => done.has(l.id))
+}
+
+/** 0..1 completion across the whole tale. */
+export function selectStoryProgress(s: AppState): number {
+  let total = 0
+  let done = 0
+  for (const ch of STORY_ONE.chapters) {
+    total += ch.levels.length
+    done += storyChapterCompleted(s, ch.id).length
   }
   return total ? done / total : 0
 }

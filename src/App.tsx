@@ -6,6 +6,9 @@ import { Atlas } from './screens/Atlas'
 import { Country } from './screens/Country'
 import { LevelPath } from './screens/LevelPath'
 import { Challenge } from './screens/Challenge'
+import { StoryHome } from './screens/StoryHome'
+import { StoryChapter } from './screens/StoryChapter'
+import { StoryChallenge } from './screens/StoryChallenge'
 import { Quests } from './screens/Quests'
 import { LearnMode } from './screens/LearnMode'
 import { Profile } from './screens/Profile'
@@ -26,6 +29,9 @@ export default function App() {
         <Route path="s/:subjectId" element={<Country />} />
         <Route path="s/:subjectId/:topicId" element={<LevelPath />} />
         <Route path="play/:subjectId/:topicId/:nodeId" element={<Challenge />} />
+        <Route path="story" element={<StoryHome />} />
+        <Route path="story/:chapterId" element={<StoryChapter />} />
+        <Route path="story/:chapterId/:levelId" element={<StoryChallenge />} />
         <Route path="quests" element={<Quests />} />
         <Route path="learn" element={<LearnMode />} />
         <Route path="profile" element={<Profile />} />

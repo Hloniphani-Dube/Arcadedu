@@ -7,6 +7,7 @@ import type {
   BossChallenge,
   EnemyQuestion,
   GradedAnswer,
+  StoryQuestion,
 } from './types'
 
 // Where the closed-action AI endpoint lives. On Vercel this is the bundled
@@ -70,6 +71,14 @@ export async function generateEnemyQuestion(
 ): Promise<EnemyQuestion> {
   const r = await callAi('generate_enemy_question', context)
   if (r.kind !== 'enemy_question') throw new AiError(`Expected enemy_question, got ${r.kind}`)
+  return r
+}
+
+export async function generateStoryQuestion(
+  context: AiRequestContext,
+): Promise<StoryQuestion> {
+  const r = await callAi('generate_story_question', context)
+  if (r.kind !== 'story_question') throw new AiError(`Expected story_question, got ${r.kind}`)
   return r
 }
 

@@ -19,6 +19,7 @@ export type BattleAction =
   | 'grade_battle_answer'
   | 'generate_boss_challenge'
   | 'grade_boss_answer'
+  | 'generate_story_question'
 
 export type AiAction = LearnAction | BattleAction
 
@@ -38,6 +39,8 @@ export interface AiRequestContext {
   difficulty?: EnemyTier
   /** Boss: which phase of the multi-part challenge. */
   bossPhase?: 'solve' | 'twist' | 'explain'
+  /** Story Mode: the chapter's title/theme, used to flavour the brain-teaser. */
+  chapter?: string
 }
 
 export interface AiRequest {
@@ -53,9 +56,19 @@ export interface AiTextResponse {
 
 export interface EnemyQuestion {
   kind: 'enemy_question'
+  /** Story flavour that sets the scene — kept apart from the problem itself. */
+  narrative: string
   question: string
   expectedConcept: string
   difficulty: EnemyTier
+}
+
+export interface StoryQuestion {
+  kind: 'story_question'
+  /** Chapter flavour for this stop on the journey. */
+  narrative: string
+  question: string
+  expectedConcept: string
 }
 
 export interface GradedAnswer {
@@ -69,6 +82,8 @@ export interface GradedAnswer {
 export interface BossChallenge {
   kind: 'boss_challenge'
   phase: 'solve' | 'twist' | 'explain'
+  /** Story flavour for the trial — kept apart from the problem itself. */
+  narrative: string
   question: string
   expectedConcept: string
 }
@@ -76,6 +91,7 @@ export interface BossChallenge {
 export type AiResponse =
   | AiTextResponse
   | EnemyQuestion
+  | StoryQuestion
   | GradedAnswer
   | BossChallenge
 
