@@ -9,10 +9,10 @@ import type {
   GradedAnswer,
 } from './types'
 
-// Local fallback when Supabase env vars aren't set: `supabase functions serve`
-// exposes functions on this URL by default.
-const LOCAL_ENDPOINT =
-  import.meta.env.VITE_AI_ENDPOINT ?? 'http://localhost:54321/functions/v1/ai'
+// Where the closed-action AI endpoint lives. On Vercel this is the bundled
+// serverless function at `/api/ai` (set VITE_AI_ENDPOINT=/api/ai). When it is
+// not set we fall back to the Supabase Edge Function via supabase-js.
+const AI_ENDPOINT = import.meta.env.VITE_AI_ENDPOINT as string | undefined
 
 export class AiError extends Error {}
 
@@ -23,6 +23,19 @@ export async function callAi(
   const body = { action, context }
 
   try {
+    // An explicit endpoint always wins (Vercel `/api/ai`, or a local serve URL).
+    if (AI_ENDPOINT) {
+      const res = await fetch(AI_ENDPOINT, {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify(body),
+      })
+      if (!res.ok) {
+        throw new AiError(`AI function returned ${res.status}: ${await res.text()}`)
+      }
+      return (await res.json()) as AiResponse
+    }
+
     if (supabase) {
       const { data, error } = await supabase.functions.invoke<AiResponse>('ai', {
         body,
@@ -32,15 +45,7 @@ export async function callAi(
       return data
     }
 
-    const res = await fetch(LOCAL_ENDPOINT, {
-      method: 'POST',
-      headers: { 'content-type': 'application/json' },
-      body: JSON.stringify(body),
-    })
-    if (!res.ok) {
-      throw new AiError(`AI function returned ${res.status}: ${await res.text()}`)
-    }
-    return (await res.json()) as AiResponse
+    throw new AiError('No AI endpoint configured (set VITE_AI_ENDPOINT)')
   } catch (err) {
     if (err instanceof AiError) throw err
     throw new AiError(
