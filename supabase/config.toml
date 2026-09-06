@@ -1,0 +1,5 @@
+# Minimal Supabase config for local dev. `supabase init` will expand this.
+project_id = "arcadedu"
+
+[functions.ai]
+verify_jwt = false
