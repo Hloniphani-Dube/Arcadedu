@@ -4,11 +4,11 @@ import { Swords, ChevronRight, Compass } from 'lucide-react'
 import { SUBJECTS } from '../game/atlas'
 import { useApp, selectSubjectUnlocked, selectTopicState } from '../store'
 import { Panel, Btn } from '../components/ui'
+import { SubjectIcon } from '../components/icons'
 
 interface Quest {
   subjectId: string
   subjectName: string
-  glyph: string
   topicId: string
   topicName: string
   cleared: number
@@ -29,7 +29,6 @@ export function Quests() {
       active.push({
         subjectId: s.id,
         subjectName: s.name,
-        glyph: s.glyph,
         topicId: t.id,
         topicName: t.name,
         cleared: st.completed.length,
@@ -65,7 +64,9 @@ export function Quests() {
             >
               <Link to={`/s/${q.subjectId}/${q.topicId}`} className="block">
                 <Panel className="flex items-center gap-4 p-4 transition hover:border-mana">
-                  <span className="text-2xl">{q.glyph}</span>
+                  <span className="grid h-9 w-9 flex-shrink-0 place-items-center rounded-lg border border-edge bg-panel-2 text-mana-bright">
+                    <SubjectIcon id={q.subjectId} className="h-4 w-4" />
+                  </span>
                   <div className="min-w-0 flex-1">
                     <div className="text-sm font-bold">
                       {q.subjectName} · {q.topicName}

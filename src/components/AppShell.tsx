@@ -3,6 +3,7 @@ import { Outlet, Link } from 'react-router-dom'
 import { Globe2, GraduationCap, BookOpen, Swords, User, LogOut } from 'lucide-react'
 import { Sidebar, SidebarBody, SidebarLink } from './ui/sidebar'
 import { ThemeMenu } from './ui/theme-menu'
+import { Avatar } from './icons'
 import { useAuth } from '../auth/auth-context'
 import { useApp } from '../store'
 
@@ -50,9 +51,10 @@ export function AppShell() {
           <div className="flex flex-col gap-3">
             {open && <ThemeMenu />}
             <div className="flex items-center gap-3 rounded-lg px-2 py-2">
-              <span className="grid h-8 w-8 flex-shrink-0 place-items-center rounded-full border border-edge bg-panel-2 text-lg">
-                {profile.avatar || '🧑‍🎓'}
-              </span>
+              <Avatar
+                value={profile.avatar}
+                className="h-8 w-8 flex-shrink-0 rounded-full border border-edge"
+              />
               {open && (
                 <div className="min-w-0">
                   <div className="truncate text-sm font-semibold">{name}</div>

@@ -4,7 +4,10 @@
 // `action` plus structured `context`; this function decides what the model is
 // allowed to do for that action and never exposes a raw prompt channel.
 //
-// Runs on the Vercel Edge runtime (Web `Request`/`Response`, `fetch`).
+// Runs on the Vercel Node.js runtime. Gemini 3.x "thinking" calls can take
+// 20-40s, so we run as a Serverless (not Edge) function and raise maxDuration —
+// Edge would cap us at ~25s and 504 (FUNCTION_INVOCATION_TIMEOUT).
+//
 // Env vars (Vercel Project Settings → Environment Variables):
 //   GEMINI_API_KEY   required — key from https://aistudio.google.com/apikey
 //   GEMINI_MODEL     optional — defaults to gemini-3.6-flash
@@ -12,7 +15,7 @@
 // The equivalent Supabase Edge Function in supabase/functions/ai/ is now legacy;
 // the deployed app calls this one via VITE_AI_ENDPOINT=/api/ai.
 
-export const config = { runtime: 'edge' }
+export const config = { maxDuration: 60 }
 
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY ?? ''
 const GEMINI_MODEL = process.env.GEMINI_MODEL ?? 'gemini-3.6-flash'
@@ -51,11 +54,6 @@ interface Ctx {
   chapter?: string
 }
 
-const jsonResponse = (body: unknown, status = 200) =>
-  new Response(JSON.stringify(body), {
-    status,
-    headers: { ...CORS, 'content-type': 'application/json' },
-  })
 
 // --- prompt registry: the guardrails --------------------------------------
 
@@ -302,49 +300,68 @@ Return JSON:
 
 // --- entrypoint ------------------------------------------------------------
 
-export default async function handler(req: Request): Promise<Response> {
-  if (req.method === 'OPTIONS') return new Response('ok', { headers: CORS })
-  if (req.method !== 'POST') return jsonResponse({ error: 'POST only' }, 405)
+// Minimal structural types for the Vercel Node request/response (avoids a
+// dependency on @vercel/node; the function bundle isn't type-checked here).
+interface VercelReq {
+  method?: string
+  body?: unknown
+  headers: Record<string, string | string[] | undefined>
+}
+interface VercelRes {
+  status: (code: number) => VercelRes
+  json: (body: unknown) => void
+  setHeader: (name: string, value: string) => void
+  end: (body?: string) => void
+}
+
+export default async function handler(req: VercelReq, res: VercelRes) {
+  for (const [k, v] of Object.entries(CORS)) res.setHeader(k, v)
+
+  if (req.method === 'OPTIONS') return res.status(200).end('ok')
+  if (req.method !== 'POST') return res.status(405).json({ error: 'POST only' })
   if (!GEMINI_API_KEY) {
-    return jsonResponse({ error: 'GEMINI_API_KEY is not set on the function' }, 500)
+    return res.status(500).json({ error: 'GEMINI_API_KEY is not set on the function' })
   }
 
-  let body: { action?: string; context?: Ctx }
+  let body: { action?: string; context?: Ctx } | null
   try {
-    body = await req.json()
+    const raw = typeof req.body === 'string' ? JSON.parse(req.body) : req.body
+    body = raw && typeof raw === 'object' ? (raw as { action?: string; context?: Ctx }) : null
   } catch {
-    return jsonResponse({ error: 'Invalid JSON body' }, 400)
+    body = null
+  }
+  if (!body) {
+    return res.status(400).json({ error: 'Invalid JSON body' })
   }
 
   const action = body.action ?? ''
   const context = (body.context ?? {}) as Ctx
   if (!context.subject || !context.topic) {
-    return jsonResponse({ error: 'context.subject and context.topic are required' }, 400)
+    return res.status(400).json({ error: 'context.subject and context.topic are required' })
   }
 
   try {
     if (isLearnAction(action)) {
-      return jsonResponse(await handleLearn(action, context))
+      return res.status(200).json(await handleLearn(action, context))
     }
     switch (action) {
       case 'generate_enemy_question':
-        return jsonResponse(await handleEnemyQuestion(context))
+        return res.status(200).json(await handleEnemyQuestion(context))
       case 'generate_story_question':
-        return jsonResponse(await handleStoryQuestion(context))
+        return res.status(200).json(await handleStoryQuestion(context))
       case 'generate_boss_challenge':
-        return jsonResponse(await handleBossChallenge(context))
+        return res.status(200).json(await handleBossChallenge(context))
       case 'grade_battle_answer':
-        return jsonResponse(await handleGrade(context, false))
+        return res.status(200).json(await handleGrade(context, false))
       case 'grade_boss_answer':
-        return jsonResponse(await handleGrade(context, true))
+        return res.status(200).json(await handleGrade(context, true))
       default:
-        return jsonResponse({ error: `Unknown action: ${action}` }, 400)
+        return res.status(400).json({ error: `Unknown action: ${action}` })
     }
   } catch (err) {
     console.error(err)
-    return jsonResponse(
-      { error: err instanceof Error ? err.message : 'AI call failed' },
-      502,
-    )
+    return res
+      .status(502)
+      .json({ error: err instanceof Error ? err.message : 'AI call failed' })
   }
 }

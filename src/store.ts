@@ -2,6 +2,7 @@ import { create } from 'zustand'
 import { levelForXp } from './game/engine'
 import { DEFAULT_UNLOCKED, getSubject, getTopic } from './game/atlas'
 import { STORY_ONE, getChapter } from './game/story'
+import { DEFAULT_AVATAR } from './components/icons'
 import {
   persistProfile,
   persistSubject,
@@ -27,7 +28,7 @@ export interface TopicState {
   current: string | null
 }
 
-const DEFAULT_PROFILE: Profile = { name: 'Adventurer', avatar: '🧑‍🎓', xp: 0 }
+const DEFAULT_PROFILE: Profile = { name: 'Adventurer', avatar: DEFAULT_AVATAR, xp: 0 }
 
 function defaultSubjects(): Record<string, SubjectState> {
   const out: Record<string, SubjectState> = {}

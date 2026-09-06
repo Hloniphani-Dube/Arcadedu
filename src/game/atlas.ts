@@ -30,8 +30,6 @@ export interface Topic {
 export interface Subject {
   id: string
   name: string
-  /** Character glyph for the avatar / marker. Emoji is intentional (character art). */
-  glyph: string
   blurb: string
   /** Visual grouping label only. */
   continent: string
@@ -98,7 +96,6 @@ export const SUBJECTS: Subject[] = [
   {
     id: 'algebra',
     name: 'Algebra',
-    glyph: '🧮',
     blurb: 'Tangled vines of unknowns. Balance both sides to find your way through.',
     continent: 'Numeria',
     center: [175, 185],
@@ -133,7 +130,6 @@ export const SUBJECTS: Subject[] = [
   {
     id: 'geometry',
     name: 'Geometry',
-    glyph: '📐',
     blurb: 'Where angles keep their promises and proofs open every door.',
     continent: 'Numeria',
     center: [165, 400],
@@ -168,7 +164,6 @@ export const SUBJECTS: Subject[] = [
   {
     id: 'physics',
     name: 'Physics',
-    glyph: '🚀',
     blurb: 'Motion, force and energy — the machinery under everything.',
     continent: 'Mechanica',
     center: [510, 150],
@@ -203,7 +198,6 @@ export const SUBJECTS: Subject[] = [
   {
     id: 'computing',
     name: 'Computing',
-    glyph: '💻',
     blurb: 'Think in steps a machine could follow — then reason about their cost.',
     continent: 'Mechanica',
     center: [545, 335],
@@ -238,7 +232,6 @@ export const SUBJECTS: Subject[] = [
   {
     id: 'biology',
     name: 'Biology',
-    glyph: '🧬',
     blurb: 'Systems within systems — structure always serving function.',
     continent: 'Vitalis',
     center: [830, 195],
@@ -273,7 +266,6 @@ export const SUBJECTS: Subject[] = [
   {
     id: 'english',
     name: 'English',
-    glyph: '📖',
     blurb: 'Read for what the text does, not just what it says.',
     continent: 'Lexica',
     center: [440, 495],

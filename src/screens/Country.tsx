@@ -4,6 +4,7 @@ import { motion } from 'framer-motion'
 import { ArrowLeft, ChevronRight, Check } from 'lucide-react'
 import { getSubject } from '../game/atlas'
 import { useApp, selectSubjectUnlocked, selectTopicState } from '../store'
+import { SubjectIcon } from '../components/icons'
 import { Panel } from '../components/ui'
 
 export function Country() {
@@ -37,8 +38,8 @@ export function Country() {
 
       <header className="mb-6">
         <div className="flex items-center gap-3">
-          <span className="grid h-12 w-12 place-items-center rounded-xl border border-edge bg-panel-2 text-2xl">
-            {subject.glyph}
+          <span className="grid h-12 w-12 place-items-center rounded-xl border border-edge bg-panel-2 text-mana-bright">
+            <SubjectIcon id={subject.id} className="h-6 w-6" />
           </span>
           <div>
             <h1 className="title-serif text-3xl">{subject.name}</h1>

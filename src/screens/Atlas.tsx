@@ -8,6 +8,7 @@ import {
   type Subject,
 } from '../game/atlas'
 import { useApp, selectSubjectProgress } from '../store'
+import { SubjectIcon } from '../components/icons'
 import { Panel } from '../components/ui'
 
 const MIN_SCALE = 0.7
@@ -228,7 +229,9 @@ function HoverCard({
   return (
     <div>
       <div className="flex items-center gap-2">
-        <span className="text-xl">{subject.glyph}</span>
+        <span className="grid h-8 w-8 place-items-center rounded-lg border border-edge bg-panel-2 text-mana-bright">
+          <SubjectIcon id={subject.id} className="h-4 w-4" />
+        </span>
         <div>
           <div className="font-bold">{subject.name}</div>
           <div className="text-xs text-muted">{subject.continent}</div>

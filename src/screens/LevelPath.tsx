@@ -4,6 +4,7 @@ import { motion, useReducedMotion } from 'framer-motion'
 import { ArrowLeft, Check, Crown, Lock, Star } from 'lucide-react'
 import { getSubject, getTopic, type AtlasNode } from '../game/atlas'
 import { useApp, selectSubjectUnlocked, selectTopicState } from '../store'
+import { SubjectIcon } from '../components/icons'
 import { Panel } from '../components/ui'
 
 const COLS = 3
@@ -175,9 +176,9 @@ export function LevelPath() {
             animate={{ x: avatarAt.x, y: avatarAt.y - (allDone ? 0 : 2) }}
             transition={reduce ? { duration: 0 } : { type: 'spring', stiffness: 120, damping: 16 }}
           >
-            <text textAnchor="middle" dy={-34} fontSize={26}>
-              {subject.glyph}
-            </text>
+            <g transform="translate(-11 -46)" className="text-mana-bright">
+              <SubjectIcon id={subject.id} className="h-[22px] w-[22px]" />
+            </g>
           </motion.g>
         </svg>
       </Panel>

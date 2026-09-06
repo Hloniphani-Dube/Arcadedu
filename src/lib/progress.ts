@@ -1,4 +1,5 @@
 import { supabase } from './supabase'
+import { DEFAULT_AVATAR } from '../components/icons'
 import type { Profile, SubjectState, TopicState } from '../store'
 
 /*
@@ -23,7 +24,7 @@ function warn(scope: string, err: unknown) {
 /** Read the full progress snapshot for a user. Missing rows → defaults. */
 export async function fetchProgress(userId: string): Promise<ProgressSnapshot> {
   const empty: ProgressSnapshot = {
-    profile: { name: 'Adventurer', avatar: '🧑‍🎓', xp: 0 },
+    profile: { name: 'Adventurer', avatar: DEFAULT_AVATAR, xp: 0 },
     subjects: {},
     topics: {},
   }
@@ -42,7 +43,8 @@ export async function fetchProgress(userId: string): Promise<ProgressSnapshot> {
     const snapshot: ProgressSnapshot = {
       profile: {
         name: prof?.display_name ?? 'Adventurer',
-        avatar: prof?.avatar ?? '🧑‍🎓',
+        // '🧑‍🎓' is the old DB column default → treat as "never chosen".
+        avatar: !prof?.avatar || prof.avatar === '🧑‍🎓' ? DEFAULT_AVATAR : prof.avatar,
         xp: prof?.xp ?? 0,
       },
       subjects: {},
