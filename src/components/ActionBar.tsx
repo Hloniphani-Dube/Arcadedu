@@ -1,10 +1,23 @@
+import type { ComponentType } from 'react'
+import {
+  BookOpen,
+  Brain,
+  ListOrdered,
+  Lightbulb,
+  Search,
+  Scissors,
+  FileText,
+  Dices,
+  Check,
+  Wrench,
+} from 'lucide-react'
 import type { LearnAction } from '../lib/types'
 import { Btn } from './ui'
 
 interface ActionMeta {
   action: LearnAction
   label: string
-  icon: string
+  Icon: ComponentType<{ className?: string }>
   /** actions that need the student's own work filled in */
   needsAnswer?: boolean
 }
@@ -12,16 +25,16 @@ interface ActionMeta {
 // The whole point of the product: this list is the entire surface area the
 // student has. No free-text prompt box anywhere.
 const LEARN_ACTIONS: ActionMeta[] = [
-  { action: 'explain', label: 'Explain this', icon: '📘' },
-  { action: 'understand', label: 'Help me understand', icon: '🧠' },
-  { action: 'steps', label: 'Show me the steps', icon: '🪜' },
-  { action: 'hint', label: 'Give me a hint', icon: '💡' },
-  { action: 'example', label: 'Give me an example', icon: '🔎' },
-  { action: 'simplify', label: 'Simplify this', icon: '✂️' },
-  { action: 'summarize', label: 'Summarize', icon: '📝' },
-  { action: 'similar_problem', label: 'Give me a similar problem', icon: '🎲' },
-  { action: 'check_answer', label: 'Check my answer', icon: '✅', needsAnswer: true },
-  { action: 'explain_mistake', label: 'Explain my mistake', icon: '🔧', needsAnswer: true },
+  { action: 'explain', label: 'Explain this', Icon: BookOpen },
+  { action: 'understand', label: 'Help me understand', Icon: Brain },
+  { action: 'steps', label: 'Show me the steps', Icon: ListOrdered },
+  { action: 'hint', label: 'Give me a hint', Icon: Lightbulb },
+  { action: 'example', label: 'Give me an example', Icon: Search },
+  { action: 'simplify', label: 'Simplify this', Icon: Scissors },
+  { action: 'summarize', label: 'Summarize', Icon: FileText },
+  { action: 'similar_problem', label: 'Give me a similar problem', Icon: Dices },
+  { action: 'check_answer', label: 'Check my answer', Icon: Check, needsAnswer: true },
+  { action: 'explain_mistake', label: 'Explain my mistake', Icon: Wrench, needsAnswer: true },
 ]
 
 export function ActionBar({
@@ -53,8 +66,10 @@ export function ActionBar({
                   : m.label
             }
           >
-            <span className="mr-1">{m.icon}</span>
-            {m.label}
+            <span className="flex items-center gap-1.5">
+              <m.Icon className="h-4 w-4 flex-shrink-0 opacity-70" />
+              {m.label}
+            </span>
           </Btn>
         )
       })}

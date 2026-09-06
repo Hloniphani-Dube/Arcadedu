@@ -1,11 +1,13 @@
 import { useEffect, useRef, useState } from 'react'
+import type { ComponentType } from 'react'
+import { Sun, Moon, Monitor, ChevronDown } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useTheme, type ThemeMode } from '@/theme'
 
-const MODES: { value: ThemeMode; label: string; glyph: string }[] = [
-  { value: 'light', label: 'Light', glyph: '☀' },
-  { value: 'dark', label: 'Dark', glyph: '☾' },
-  { value: 'system', label: 'System', glyph: '🖳' },
+const MODES: { value: ThemeMode; label: string; Icon: ComponentType<{ className?: string }> }[] = [
+  { value: 'light', label: 'Light', Icon: Sun },
+  { value: 'dark', label: 'Dark', Icon: Moon },
+  { value: 'system', label: 'System', Icon: Monitor },
 ]
 
 export function ThemeMenu({ className }: { className?: string }) {
@@ -34,7 +36,7 @@ export function ThemeMenu({ className }: { className?: string }) {
   const current = MODES.find((m) => m.value === mode) ?? MODES[2]
 
   return (
-    <div ref={rootRef} className={cn('flex items-center gap-2', className)}>
+    <div ref={rootRef} className={cn('flex flex-wrap items-center gap-2', className)}>
       {/* Skin toggle */}
       <div className="arcade-frame flex overflow-hidden rounded-lg border border-edge bg-panel text-xs">
         {(['normal', 'arcade'] as const).map((s) => (
@@ -63,11 +65,9 @@ export function ThemeMenu({ className }: { className?: string }) {
           aria-expanded={open}
           className="arcade-frame flex items-center gap-2 rounded-lg border border-edge bg-panel px-3 py-1.5 text-xs font-semibold transition hover:border-mana"
         >
-          <span aria-hidden>{current.glyph}</span>
+          <current.Icon className="h-3.5 w-3.5" />
           <span>{current.label}</span>
-          <span aria-hidden className="text-muted">
-            ▾
-          </span>
+          <ChevronDown aria-hidden className="h-3.5 w-3.5 text-muted" />
         </button>
 
         {open && (
@@ -92,7 +92,7 @@ export function ThemeMenu({ className }: { className?: string }) {
                       : 'text-muted hover:bg-panel-2 hover:text-ink',
                   )}
                 >
-                  <span aria-hidden>{m.glyph}</span>
+                  <m.Icon className="h-3.5 w-3.5" />
                   {m.label}
                 </button>
               </li>

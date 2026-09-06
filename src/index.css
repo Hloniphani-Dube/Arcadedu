@@ -16,43 +16,53 @@
 :root,
 [data-skin='normal'] {
   --font-display: 'Trebuchet MS', 'Segoe UI', system-ui, sans-serif;
+  --font-serif: 'Iowan Old Style', 'Palatino Linotype', 'Georgia', serif;
   --radius: 0.75rem;
 
-  /* light is the default when data-theme isn't "dark" */
-  --void: #f3f5fb;
-  --panel: #ffffff;
-  --panel-2: #eef1f8;
-  --edge: #d3dae8;
-  --ink: #1b2138;
-  --muted: #5f6b88;
+  /* Adventure cartography — light: aged parchment + sepia ink */
+  --void: #f4ecd8;
+  --panel: #fbf5e6;
+  --panel-2: #ece0c4;
+  --edge: #cbb78c;
+  --ink: #2b2419;
+  --muted: #6f6350;
 
-  --mana: #4a63e0;
-  --mana-bright: #3346c7;
-  --xp: #a06d00;
-  --hp: #d83350;
-  --heal: #1f9d57;
+  /* brass primary, expedition green, terracotta danger, gold xp */
+  --mana: #9a6a1e;
+  --mana-bright: #7d551a;
+  --xp: #c8912f;
+  --hp: #b1402f;
+  --heal: #3f6b4c;
+
+  /* readable ink laid on a brass fill */
+  --on-accent: #fdf8ec;
 
   --app-bg:
-    radial-gradient(1200px 600px at 50% -10%, #e7ecfb 0%, transparent 60%),
+    radial-gradient(1100px 620px at 50% -12%, #efe2c2 0%, transparent 62%),
+    radial-gradient(900px 500px at 88% 8%, #e9dabb 0%, transparent 55%),
     var(--void);
 }
 
 [data-theme='dark'] {
-  --void: #0b0f1a;
-  --panel: #141a2b;
-  --panel-2: #1c2438;
-  --edge: #2b3550;
-  --ink: #e7ecff;
-  --muted: #9aa6c7;
+  /* oiled leather + candlelight */
+  --void: #1a1712;
+  --panel: #241f17;
+  --panel-2: #2e281d;
+  --edge: #4a4030;
+  --ink: #efe6d2;
+  --muted: #a9997d;
 
-  --mana: #6c8cff;
-  --mana-bright: #93a9ff;
-  --xp: #ffce54;
-  --hp: #ff5d73;
-  --heal: #4ade80;
+  --mana: #d9a441;
+  --mana-bright: #f0c46a;
+  --xp: #ffd23f;
+  --hp: #d9694f;
+  --heal: #6fae7f;
+
+  --on-accent: #1f1913;
 
   --app-bg:
-    radial-gradient(1200px 600px at 50% -10%, #1a2340 0%, transparent 60%),
+    radial-gradient(1100px 620px at 50% -12%, #2a2318 0%, transparent 62%),
+    radial-gradient(900px 500px at 88% 8%, #221d15 0%, transparent 55%),
     var(--void);
 }
 
@@ -69,11 +79,13 @@
   --ink: #1a1a1a;
   --muted: #5a5a4a;
 
-  --mana: #2d5bd7;
-  --mana-bright: #1e3fa8;
+  --mana: #8a5e1e;
+  --mana-bright: #6b4715;
   --xp: #b7791f;
-  --hp: #c62828;
+  --hp: #b1402f;
   --heal: #2e7d32;
+
+  --on-accent: #fdf8ec;
 
   --app-bg: var(--void);
 }
@@ -86,11 +98,13 @@
   --ink: #f2f2f2;
   --muted: #a8a8c0;
 
-  --mana: #4f8cff;
-  --mana-bright: #7dd3fc;
+  --mana: #d9a441;
+  --mana-bright: #f0c46a;
   --xp: #ffd23f;
-  --hp: #ff4d6d;
-  --heal: #5dfc8d;
+  --hp: #d9694f;
+  --heal: #6fae7f;
+
+  --on-accent: #1f1913;
 
   --app-bg: var(--void);
 }
@@ -110,6 +124,7 @@
   --color-xp: var(--xp);
   --color-hp: var(--hp);
   --color-heal: var(--heal);
+  --color-on-accent: var(--on-accent);
 
   /* shadcn-compatible aliases so components from 8bitcn / shadcn registries paste in cleanly */
   --color-background: var(--void);
@@ -119,7 +134,7 @@
   --color-popover: var(--panel);
   --color-popover-foreground: var(--ink);
   --color-primary: var(--mana);
-  --color-primary-foreground: #ffffff;
+  --color-primary-foreground: var(--on-accent);
   --color-secondary: var(--panel-2);
   --color-secondary-foreground: var(--ink);
   --color-muted-foreground: var(--muted);
@@ -155,6 +170,14 @@ body {
   transition:
     background-color 0.2s ease,
     color 0.2s ease;
+}
+
+/* Cartography display face — opt in on hero headings / map titles.
+   Inert in arcade skin, which forces its own pixel font below. */
+.title-serif {
+  font-family: var(--font-serif);
+  font-weight: 600;
+  letter-spacing: -0.01em;
 }
 
 ::-webkit-scrollbar {

@@ -1,4 +1,5 @@
 import { motion } from 'framer-motion'
+import { Sparkles } from 'lucide-react'
 import { Spinner } from './ui'
 
 export interface AriaLine {
@@ -20,7 +21,9 @@ export function AriaSpeech({
   return (
     <div className="flex flex-col gap-3">
       <div className="flex items-center gap-2">
-        <span className="text-2xl">🧙‍♀️</span>
+        <span className="grid h-9 w-9 place-items-center rounded-full border border-mana/30 bg-mana/15 text-mana-bright">
+          <Sparkles className="h-4 w-4" />
+        </span>
         <div>
           <div className="font-bold text-mana-bright">ARIA</div>
           <div className="text-xs text-muted">Your learning companion</div>

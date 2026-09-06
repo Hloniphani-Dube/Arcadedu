@@ -77,6 +77,7 @@ export function Btn({
   variant = 'ghost',
   className = '',
   title,
+  type = 'button',
 }: {
   children: ReactNode
   onClick?: () => void
@@ -84,17 +85,18 @@ export function Btn({
   variant?: 'primary' | 'ghost' | 'danger'
   className?: string
   title?: string
+  type?: 'button' | 'submit'
 }) {
   const styles = {
     primary:
-      'bg-mana text-void border-mana hover:bg-mana-bright disabled:bg-edge disabled:text-muted',
+      'bg-mana text-on-accent border-mana hover:bg-mana-bright disabled:bg-edge disabled:text-muted',
     ghost:
       'bg-panel-2 text-ink border-edge hover:border-mana hover:text-mana-bright disabled:opacity-40',
     danger: 'bg-hp/15 text-hp border-hp/40 hover:bg-hp/25 disabled:opacity-40',
   }[variant]
   return (
     <button
-      type="button"
+      type={type}
       title={title}
       onClick={onClick}
       disabled={disabled}

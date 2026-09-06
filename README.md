@@ -12,13 +12,16 @@ those grades into XP, HP, levels and world progression.
 
 | Piece | Where | Proves |
 | --- | --- | --- |
+| **The Atlas** | [src/screens/Atlas.tsx](src/screens/Atlas.tsx) | A pannable world map; each country is a subject that unlocks the next |
+| **Level path** | [src/screens/LevelPath.tsx](src/screens/LevelPath.tsx) | Candy-Crush-style node path; the traveller advances as challenges clear |
+| **Challenge** | [src/screens/Challenge.tsx](src/screens/Challenge.tsx) | The same AI generates & grades each node (boss = 3-phase mastery) |
 | **Learn mode** | [src/screens/LearnMode.tsx](src/screens/LearnMode.tsx) | AI can teach without handing over answers |
-| **RPG mode — Algebra Forest** | [src/screens/RpgMode.tsx](src/screens/RpgMode.tsx) | The same AI generates & adapts challenges |
-| **Game engine** | [src/game/engine.ts](src/game/engine.ts) | Grades become an RPG progression system |
+| **Game engine** | [src/game/engine.ts](src/game/engine.ts) | Grades become an XP / level progression system |
+| **Auth + progress** | [src/auth/](src/auth/) · [src/lib/progress.ts](src/lib/progress.ts) | Per-user progress in Supabase (Google / magic-link), RLS-scoped |
 | **AI edge function** | [supabase/functions/ai/index.ts](supabase/functions/ai/index.ts) | The Gemini key stays server-side; actions are a closed set |
 
-`Practice` and `Exam` modes are stubbed on the home screen as the next build targets.
-Five more worlds are defined as locked stubs in [src/game/worlds.ts](src/game/worlds.ts).
+The atlas content model lives in [src/game/atlas.ts](src/game/atlas.ts) — six subjects
+across four continents, two open from the start, the rest gated behind a prerequisite.
 
 ## Architecture
 
@@ -65,7 +68,21 @@ supabase functions serve --env-file supabase/.env.local
 > <https://aistudio.google.com/apikey> and put it only in `supabase/.env.local`
 > (gitignored) — never in the frontend or a committed file.
 
-### 3. Deploy (optional)
+### 3. Auth + progress persistence
+
+1. Run [supabase/migrations/0001_init_progress.sql](supabase/migrations/0001_init_progress.sql)
+   — Dashboard → SQL editor, or `supabase db push`. It creates `profiles`,
+   `subject_progress`, `topic_progress`, their RLS policies, and the new-user trigger.
+2. Dashboard → **Authentication → Providers**: enable **Google** (add an OAuth client).
+3. Dashboard → **Authentication → URL Configuration → Redirect URLs**: add
+   `http://localhost:5173` and your deployed origin.
+4. Set `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY` in `.env.local`
+   (the `sb_publishable_…` key is the browser-safe anon/publishable key).
+
+Without these the app still runs in **local mode**: no sign-in, progress kept only in
+memory for the session.
+
+### 4. Deploy the AI function (optional)
 
 ```bash
 supabase link --project-ref <ref>
@@ -73,16 +90,13 @@ supabase secrets set GEMINI_API_KEY=<rotated-key>
 supabase functions deploy ai --no-verify-jwt
 ```
 
-Then set `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY` in `.env.local` and the
-app will call the deployed function via `supabase-js` instead of the local URL.
-
 ## Stack
 
-React 19 · Vite · TypeScript · Tailwind v4 · Framer Motion · Zustand ·
-Supabase Edge Functions (Deno) · Gemini API
+React 19 · Vite · TypeScript · React Router · Tailwind v4 · Framer Motion ·
+lucide-react · Zustand · Supabase (Auth + Postgres + Edge Functions) · Gemini API
 
-Profile/XP currently persists to `localStorage` ([src/store.ts](src/store.ts));
-moving it to a Supabase `profiles` table + Auth is the next step.
+Player progress persists to Supabase ([src/lib/progress.ts](src/lib/progress.ts)),
+hydrated into a Zustand cache on sign-in ([src/store.ts](src/store.ts)).
 
 ## Scripts
 
