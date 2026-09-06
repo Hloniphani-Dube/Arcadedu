@@ -156,6 +156,29 @@ export async function runTick(args: RunTickArgs): Promise<TickOutcome> {
   }
   const eventId = claim.data.id as string
 
+  // The student's wider routine load — academic dates + recurring routines — so
+  // the agent can reprioritise around a near deadline on a weak topic.
+  const horizonEnd = new Date(now.getTime() + 28 * 86400000)
+    .toISOString()
+    .slice(0, 10)
+  const pastStart = new Date(now.getTime() - 21 * 86400000)
+    .toISOString()
+    .slice(0, 10)
+  const [calRes, occRes] = userId
+    ? await Promise.all([
+        db
+          .from('calendar_events')
+          .select('title, kind, event_date, topic_id, completed')
+          .eq('user_id', userId)
+          .lte('event_date', horizonEnd),
+        db
+          .from('routine_occurrences')
+          .select('due_date, status')
+          .eq('user_id', userId)
+          .gte('due_date', pastStart),
+      ])
+    : [{ data: [] }, { data: [] }]
+
   const context = buildAgentContext({
     snapshot,
     level: 1,
@@ -164,6 +187,14 @@ export async function runTick(args: RunTickArgs): Promise<TickOutcome> {
       getSubject(snapshot.mission.subject_id)?.name ??
       id,
     currentDate: now,
+    calendarEvents: (calRes.data ?? []) as {
+      title: string
+      kind: string
+      event_date: string
+      topic_id: string | null
+      completed: boolean
+    }[],
+    routineOccurrences: (occRes.data ?? []) as { due_date: string; status: string }[],
   })
   const confidence = context.plan_confidence.confidence
 

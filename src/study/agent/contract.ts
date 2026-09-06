@@ -245,6 +245,17 @@ export interface AgentContext {
   missed_sessions: number
   days_remaining: number
   exam_proximity_crossing: number | null
+  /** upcoming academic dates the student put on their calendar (spec: routine load) */
+  calendar: {
+    title: string
+    kind: string
+    days_until: number
+    topic_id: string | null
+  }[]
+  /** calendar dates sitting exactly on a 14 / 7 / 3 / 1-day milestone today */
+  deadline_crossings: { title: string; kind: string; days_until: number }[]
+  /** recurring routines the student has fallen behind on */
+  routines_behind: number
   plan_confidence: {
     confidence: PlanConfidence
     days_remaining: number

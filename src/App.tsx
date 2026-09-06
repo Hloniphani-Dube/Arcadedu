@@ -17,6 +17,8 @@ import { MissionCreate } from './screens/MissionCreate'
 import { MissionDiagnostic } from './screens/MissionDiagnostic'
 import { StudyPlan } from './screens/StudyPlan'
 import { MissionSession } from './screens/MissionSession'
+import { Calendar } from './screens/Calendar'
+import { Inbox } from './screens/Inbox'
 
 export default function App() {
   return (
@@ -38,6 +40,8 @@ export default function App() {
         <Route path="story/:chapterId" element={<StoryChapter />} />
         <Route path="story/:chapterId/:levelId" element={<StoryChallenge />} />
         <Route path="quests" element={<Quests />} />
+        <Route path="inbox" element={<Inbox />} />
+        <Route path="calendar" element={<Calendar />} />
         <Route path="missions" element={<MissionsHome />} />
         <Route path="missions/new" element={<MissionCreate />} />
         <Route path="missions/:missionId" element={<StudyPlan />} />

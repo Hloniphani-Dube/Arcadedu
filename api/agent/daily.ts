@@ -8,8 +8,9 @@
 // In the target AWS topology this is an EventBridge Scheduler rule hitting the
 // same path; nothing else changes.
 
-import { createClient } from '@supabase/supabase-js'
+import { createClient, type SupabaseClient } from '@supabase/supabase-js'
 import { httpDecide, runTick } from '../../src/study/agent/pipeline'
+import { routineOccurrenceDates } from '../../src/study/calendar'
 
 export const config = { maxDuration: 300 }
 
@@ -47,14 +48,16 @@ export default async function handler(req: VercelReq, res: VercelRes) {
     auth: { persistSession: false, autoRefreshToken: false },
   })
 
+  const now = new Date()
+  const today = now.toISOString().slice(0, 10)
+
+  await materialiseRoutines(db, today)
+
   const { data: missions, error } = await db
     .from('study_missions')
     .select('id, user_id, exam_date')
     .eq('status', 'active')
   if (error) return res.status(500).json({ error: error.message })
-
-  const now = new Date()
-  const today = now.toISOString().slice(0, 10)
   const decide = httpDecide(baseUrl(req))
   const results: Record<string, unknown>[] = []
 
@@ -86,4 +89,38 @@ export default async function handler(req: VercelReq, res: VercelRes) {
   }
 
   return res.status(200).json({ processed: results.length, date: today, results })
+}
+
+/** Fill routine_occurrences for the horizon ahead and flag overdue ones missed. */
+async function materialiseRoutines(
+  db: SupabaseClient,
+  today: string,
+): Promise<void> {
+  const { data: routines } = await db
+    .from('routines')
+    .select('id, user_id, weekday, cadence, anchor_date')
+    .eq('active', true)
+
+  const rows: { routine_id: string; user_id: string; due_date: string }[] = []
+  for (const r of (routines ?? []) as {
+    id: string
+    user_id: string
+    weekday: number
+    cadence: 'weekly' | 'biweekly'
+    anchor_date: string
+  }[]) {
+    for (const due of routineOccurrenceDates(r, today, 21)) {
+      rows.push({ routine_id: r.id, user_id: r.user_id, due_date: due })
+    }
+  }
+  if (rows.length) {
+    await db
+      .from('routine_occurrences')
+      .upsert(rows, { onConflict: 'routine_id,due_date', ignoreDuplicates: true })
+  }
+  await db
+    .from('routine_occurrences')
+    .update({ status: 'missed' })
+    .eq('status', 'pending')
+    .lt('due_date', today)
 }

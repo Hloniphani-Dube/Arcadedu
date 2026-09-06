@@ -28,6 +28,9 @@ function ctx(over: Partial<AgentContext> = {}): AgentContext {
     missed_sessions: 0,
     days_remaining: 28,
     exam_proximity_crossing: null,
+    calendar: [],
+    deadline_crossings: [],
+    routines_behind: 0,
     plan_confidence: {
       confidence: 'ON_TRACK',
       days_remaining: 28,

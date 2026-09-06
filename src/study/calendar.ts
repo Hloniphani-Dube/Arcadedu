@@ -1,0 +1,186 @@
+// Deterministic calendar + reminders engine.
+//
+// Turns fixed academic dates, recurring routines and the study plan into a
+// single "on your plate" list, and surfaces deadline crossings for the agent.
+// Pure — no DB, no model.
+
+import { daysBetween, parseDay } from './dates.ts'
+import type { Reminder } from './types.ts'
+
+interface EventLike {
+  title: string
+  kind: string
+  event_date: string
+  completed: boolean
+}
+interface EventLikeWithTopic extends EventLike {
+  topic_id: string | null
+}
+
+// --- recurring routines ---------------------------------------------------
+
+export interface RoutineShape {
+  weekday: number // 0 = Sunday
+  cadence: 'weekly' | 'biweekly'
+  anchor_date: string // YYYY-MM-DD
+}
+
+/** Due dates for a routine within [from, from + horizonDays], as YYYY-MM-DD. */
+export function routineOccurrenceDates(
+  routine: RoutineShape,
+  from: string,
+  horizonDays = 21,
+): string[] {
+  const out: string[] = []
+  for (let d = 0; d <= horizonDays; d++) {
+    const day = new Date(parseDay(from).getTime() + d * 86400000)
+    if (day.getUTCDay() !== routine.weekday) continue
+    if (routine.cadence === 'biweekly') {
+      const weeks = Math.floor(
+        daysBetween(routine.anchor_date, day.toISOString().slice(0, 10)) / 7,
+      )
+      if (((weeks % 2) + 2) % 2 !== 0) continue
+    }
+    out.push(day.toISOString().slice(0, 10))
+  }
+  return out
+}
+
+// --- reminders ----------------------------------------------------------
+
+export interface ReminderInputs {
+  today: string
+  /** how far ahead study sessions surface (calendar events use a wider window) */
+  sessionHorizonDays?: number
+  sessions: {
+    id: string
+    missionId: string
+    topicName: string
+    kind: string
+    scheduled_date: string
+  }[]
+  events: (EventLike & { id: string })[]
+  routineOccurrences: { id: string; title: string; due_date: string }[]
+}
+
+const KIND_DETAIL: Record<string, string> = {
+  practice: 'Practice session',
+  revision: 'Revision session',
+  prerequisite_review: 'Prerequisite review',
+  diagnostic: 'Diagnostic',
+  exam: 'Exam',
+  assignment: 'Assignment due',
+  quiz: 'Quiz',
+  deadline: 'Deadline',
+  lecture: 'Lecture',
+  other: 'Reminder',
+  routine: 'Recurring task',
+}
+
+function whenFor(today: string, date: string): Reminder['when'] {
+  const d = daysBetween(today, date)
+  if (d < 0) return 'overdue'
+  if (d === 0) return 'today'
+  return 'soon'
+}
+
+export function buildReminders(input: ReminderInputs): Reminder[] {
+  const { today } = input
+  const sessionHorizon = input.sessionHorizonDays ?? 7
+  const out: Reminder[] = []
+
+  for (const s of input.sessions) {
+    if (daysBetween(today, s.scheduled_date) > sessionHorizon) continue
+    out.push({
+      id: `session:${s.id}`,
+      source: 'session',
+      kind: s.kind,
+      title: s.topicName,
+      detail: KIND_DETAIL[s.kind] ?? 'Study session',
+      date: s.scheduled_date,
+      when: whenFor(today, s.scheduled_date),
+      ref: { missionId: s.missionId, planSessionId: s.id },
+    })
+  }
+
+  for (const e of input.events) {
+    if (e.completed) continue
+    const d = daysBetween(today, e.event_date)
+    if (d < -3 || d > 21) continue
+    out.push({
+      id: `event:${e.id}`,
+      source: 'event',
+      kind: e.kind,
+      title: e.title,
+      detail: KIND_DETAIL[e.kind] ?? 'Calendar date',
+      date: e.event_date,
+      when: whenFor(today, e.event_date),
+      ref: { eventId: e.id },
+    })
+  }
+
+  for (const r of input.routineOccurrences) {
+    const d = daysBetween(today, r.due_date)
+    if (d < -7 || d > 14) continue
+    out.push({
+      id: `routine:${r.id}`,
+      source: 'routine',
+      kind: 'routine',
+      title: r.title,
+      detail: KIND_DETAIL.routine,
+      date: r.due_date,
+      when: whenFor(today, r.due_date),
+      ref: { routineOccurrenceId: r.id },
+    })
+  }
+
+  const rank = { overdue: 0, today: 1, soon: 2 }
+  return out.sort(
+    (a, b) => rank[a.when] - rank[b.when] || a.date.localeCompare(b.date),
+  )
+}
+
+// --- agent-facing views -----------------------------------------------
+
+const CROSSINGS = [14, 7, 3, 1]
+
+/** Events whose distance is exactly a notify-worthy milestone today. */
+export function deadlineCrossings(
+  events: EventLike[],
+  today: string,
+): { title: string; kind: string; days_until: number }[] {
+  return events
+    .filter((e) => !e.completed && CROSSINGS.includes(daysBetween(today, e.event_date)))
+    .map((e) => ({ title: e.title, kind: e.kind, days_until: daysBetween(today, e.event_date) }))
+}
+
+/** Compact upcoming-calendar slice for the agent context. */
+export function upcomingCalendar(
+  events: EventLikeWithTopic[],
+  today: string,
+  horizonDays = 28,
+): { title: string; kind: string; days_until: number; topic_id: string | null }[] {
+  return events
+    .filter((e) => {
+      const d = daysBetween(today, e.event_date)
+      return !e.completed && d >= 0 && d <= horizonDays
+    })
+    .map((e) => ({
+      title: e.title,
+      kind: e.kind,
+      days_until: daysBetween(today, e.event_date),
+      topic_id: e.topic_id ?? null,
+    }))
+    .sort((a, b) => a.days_until - b.days_until)
+}
+
+/** Missed + overdue routine occurrences in the recent past. */
+export function routinesBehind(
+  occurrences: { due_date: string; status: string }[],
+  today: string,
+): number {
+  return occurrences.filter((o) => {
+    if (daysBetween(today, o.due_date) < -21) return false
+    return o.status === 'missed' || (o.status === 'pending' && daysBetween(today, o.due_date) < 0)
+  }).length
+}

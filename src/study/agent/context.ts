@@ -2,10 +2,24 @@
 // rows + a name lookup + the clock, get back an AgentContext. No DB, no model.
 
 import { calculatePlanConfidence } from '../confidence.ts'
+import {
+  deadlineCrossings,
+  routinesBehind,
+  upcomingCalendar,
+} from '../calendar.ts'
 import { TARGET_MASTERY_DEFAULT } from '../config.ts'
 import { daysBetween, toDayString } from '../dates.ts'
 import type { MissionSnapshot } from '../types.ts'
 import type { AgentContext } from './contract.ts'
+
+/** Loosened calendar-event shape (kind as plain string) for cross-source callers. */
+export interface CalendarEventLike {
+  title: string
+  kind: string
+  event_date: string
+  topic_id: string | null
+  completed: boolean
+}
 
 const PROXIMITY_MILESTONES = [14, 7, 3, 1]
 
@@ -14,6 +28,10 @@ export interface BuildContextInput {
   topicName: (topicId: string) => string
   level: number
   currentDate?: Date
+  /** the student's academic calendar (all upcoming events, any mission) */
+  calendarEvents?: CalendarEventLike[]
+  /** recent routine occurrences, for the "behind on routines" signal */
+  routineOccurrences?: { due_date: string; status: string }[]
 }
 
 export function buildAgentContext(input: BuildContextInput): AgentContext {
@@ -31,6 +49,8 @@ export function buildAgentContext(input: BuildContextInput): AgentContext {
   ).length
 
   const plan_confidence = calculatePlanConfidence(mission, topics, mastery, now)
+  const calendarEvents = input.calendarEvents ?? []
+  const routineOccurrences = input.routineOccurrences ?? []
 
   return {
     current_date: today,
@@ -84,6 +104,9 @@ export function buildAgentContext(input: BuildContextInput): AgentContext {
     exam_proximity_crossing: PROXIMITY_MILESTONES.includes(days_remaining)
       ? days_remaining
       : null,
+    calendar: upcomingCalendar(calendarEvents, today, 28),
+    deadline_crossings: deadlineCrossings(calendarEvents, today),
+    routines_behind: routinesBehind(routineOccurrences, today),
     plan_confidence,
   }
 }

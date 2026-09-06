@@ -6,6 +6,8 @@ import {
   BookOpen,
   Swords,
   Target,
+  CalendarDays,
+  Inbox as InboxIcon,
   User,
   LogOut,
 } from 'lucide-react'
@@ -14,22 +16,39 @@ import { ThemeMenu } from './ui/theme-menu'
 import { Avatar } from './icons'
 import { useAuth } from '../auth/auth-context'
 import { useApp } from '../store'
+import { useInboxCount } from '../study/useInboxCount'
 
-const LINKS = [
-  { label: 'Atlas', href: '/', icon: <Globe2 className="h-5 w-5 flex-shrink-0" />, end: true },
-  { label: 'Learn', href: '/learn', icon: <GraduationCap className="h-5 w-5 flex-shrink-0" /> },
-  { label: 'Story', href: '/story', icon: <BookOpen className="h-5 w-5 flex-shrink-0" /> },
-  { label: 'Missions', href: '/missions', icon: <Target className="h-5 w-5 flex-shrink-0" /> },
-  { label: 'Quests', href: '/quests', icon: <Swords className="h-5 w-5 flex-shrink-0" /> },
-  { label: 'Profile', href: '/profile', icon: <User className="h-5 w-5 flex-shrink-0" /> },
-]
+const icon = 'h-5 w-5 flex-shrink-0'
 
 export function AppShell() {
   const [open, setOpen] = useState(false)
   const { user, signOut, unconfigured } = useAuth()
   const profile = useApp((s) => s.profile)
+  const inboxCount = useInboxCount()
 
   const name = profile.name || user?.email?.split('@')[0] || 'Adventurer'
+
+  const inboxIcon = (
+    <span className="relative flex-shrink-0">
+      <InboxIcon className={icon} />
+      {inboxCount > 0 && (
+        <span className="absolute -right-1.5 -top-1.5 grid h-4 min-w-4 place-items-center rounded-full bg-hp px-1 text-[10px] font-bold leading-none text-on-accent">
+          {inboxCount > 9 ? '9+' : inboxCount}
+        </span>
+      )}
+    </span>
+  )
+
+  const links = [
+    { label: 'Atlas', href: '/', icon: <Globe2 className={icon} />, end: true },
+    { label: 'Inbox', href: '/inbox', icon: inboxIcon },
+    { label: 'Calendar', href: '/calendar', icon: <CalendarDays className={icon} /> },
+    { label: 'Missions', href: '/missions', icon: <Target className={icon} /> },
+    { label: 'Learn', href: '/learn', icon: <GraduationCap className={icon} /> },
+    { label: 'Story', href: '/story', icon: <BookOpen className={icon} /> },
+    { label: 'Quests', href: '/quests', icon: <Swords className={icon} /> },
+    { label: 'Profile', href: '/profile', icon: <User className={icon} /> },
+  ]
 
   return (
     <div className="flex min-h-dvh w-full flex-col md:flex-row">
@@ -51,7 +70,7 @@ export function AppShell() {
             </Link>
 
             <nav className="mt-8 flex flex-col gap-1">
-              {LINKS.map((link) => (
+              {links.map((link) => (
                 <SidebarLink key={link.href} link={link} />
               ))}
             </nav>

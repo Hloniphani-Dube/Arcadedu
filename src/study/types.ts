@@ -109,6 +109,73 @@ export interface AgentEvent {
   created_at: string
 }
 
+export type CalendarEventKind =
+  | 'exam'
+  | 'assignment'
+  | 'quiz'
+  | 'deadline'
+  | 'lecture'
+  | 'other'
+
+export interface CalendarEvent {
+  id: string
+  user_id: string
+  mission_id: string | null
+  topic_id: string | null
+  title: string
+  kind: CalendarEventKind
+  event_date: string // YYYY-MM-DD
+  notes: string | null
+  completed: boolean
+  created_at: string
+  updated_at: string
+}
+
+export type RoutineCadence = 'weekly' | 'biweekly'
+
+export interface Routine {
+  id: string
+  user_id: string
+  mission_id: string | null
+  title: string
+  cadence: RoutineCadence
+  weekday: number // 0 = Sunday
+  anchor_date: string // YYYY-MM-DD
+  active: boolean
+  created_at: string
+  updated_at: string
+}
+
+export type RoutineOccurrenceStatus = 'pending' | 'done' | 'missed'
+
+export interface RoutineOccurrence {
+  id: string
+  routine_id: string
+  user_id: string
+  due_date: string // YYYY-MM-DD
+  status: RoutineOccurrenceStatus
+  completed_at: string | null
+  created_at: string
+}
+
+/** A single "on your plate" item, computed live from sessions + events + routines. */
+export interface Reminder {
+  id: string
+  source: 'session' | 'event' | 'routine'
+  kind: string
+  title: string
+  detail?: string
+  date: string // YYYY-MM-DD
+  when: 'overdue' | 'today' | 'soon'
+  /** where "act on this" leads */
+  ref: {
+    missionId?: string
+    planSessionId?: string
+    eventId?: string
+    routineOccurrenceId?: string
+  }
+}
+
 export interface StudyNotification {
   id: string
   user_id: string

@@ -49,6 +49,12 @@ What the deterministic gate enforces (respect it, or your decision is dropped):
   days away with a weak topic and >=2 missed sessions. At most one notification
   per 24h. When in doubt, notify=false.
 
+Routine load:
+- The student also has an academic calendar (exams, assignments, deadlines) and
+  recurring routines. A deadline within ~7 days on a weak or below-target topic
+  is a strong reason to REPRIORITIZE or REDISTRIBUTE toward that topic. Do NOT
+  invent calendar entries or routines — you only read them.
+
 Decision guide:
 - Plan ON_TRACK and mastery moving: KEEP, changes=[].
 - A topic improving well: ADVANCE_DIFFICULTY / DE_ESCALATE_STRATEGY (one rung
@@ -162,6 +168,17 @@ def _run_agent(context: dict[str, Any], trigger: str) -> dict[str, Any]:
             "exam_proximity_crossing": _CTX.get("exam_proximity_crossing"),
         }
 
+    @tool
+    def get_calendar() -> dict:
+        """The student's upcoming academic dates (exam / assignment / quiz /
+        deadline), any deadline sitting exactly on a 14/7/3/1-day milestone
+        today, and how many recurring routines they have fallen behind on."""
+        return {
+            "calendar": _CTX.get("calendar", []),
+            "deadline_crossings": _CTX.get("deadline_crossings", []),
+            "routines_behind": _CTX.get("routines_behind", 0),
+        }
+
     agent = Agent(
         model=BedrockModel(model_id=BEDROCK_MODEL_ID, temperature=0.2),
         system_prompt=SYSTEM_PROMPT,
@@ -171,6 +188,7 @@ def _run_agent(context: dict[str, Any], trigger: str) -> dict[str, Any]:
             get_current_plan,
             get_recent_sessions,
             analyze_weakness,
+            get_calendar,
         ],
     )
 

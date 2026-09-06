@@ -9,15 +9,22 @@ import {
   seedMastery,
 } from './mastery'
 import { generatePlan, type PlanDraft } from './plan'
+import { routineOccurrenceDates } from './calendar'
 import { TARGET_MASTERY_DEFAULT } from './config'
-import { toDayString } from './dates'
+import { addDays, toDayString } from './dates'
 import type {
   AgentEvent,
+  CalendarEvent,
+  CalendarEventKind,
   GradedItem,
   MasteryUpdate,
   MissionSnapshot,
   MissionTopic,
   PlanSession,
+  Routine,
+  RoutineCadence,
+  RoutineOccurrence,
+  RoutineOccurrenceStatus,
   SessionLog,
   StrategyLevel,
   StudyMission,
@@ -378,4 +385,286 @@ export async function fetchNotifications(
 export async function markNotificationRead(id: string): Promise<void> {
   if (!supabase) return
   await supabase.from('notifications').update({ read: true }).eq('id', id)
+}
+
+// --- academic calendar -----------------------------------------------------
+
+export interface CalendarEventInput {
+  user_id: string
+  title: string
+  kind: CalendarEventKind
+  event_date: string
+  mission_id?: string | null
+  topic_id?: string | null
+  notes?: string | null
+}
+
+export async function fetchCalendarEvents(
+  userId: string,
+  range?: { from?: string; to?: string },
+): Promise<CalendarEvent[]> {
+  if (!supabase) return []
+  let q = supabase
+    .from('calendar_events')
+    .select('*')
+    .eq('user_id', userId)
+    .order('event_date', { ascending: true })
+  if (range?.from) q = q.gte('event_date', range.from)
+  if (range?.to) q = q.lte('event_date', range.to)
+  const { data, error } = await q
+  if (error) throw new StudyDbError(error.message)
+  return (data ?? []) as CalendarEvent[]
+}
+
+export async function createCalendarEvent(
+  input: CalendarEventInput,
+): Promise<CalendarEvent> {
+  const db = requireDb()
+  const { data, error } = await db
+    .from('calendar_events')
+    .insert({
+      user_id: input.user_id,
+      title: input.title.trim() || 'Untitled',
+      kind: input.kind,
+      event_date: input.event_date,
+      mission_id: input.mission_id ?? null,
+      topic_id: input.topic_id ?? null,
+      notes: input.notes ?? null,
+    })
+    .select('*')
+    .single()
+  if (error || !data) throw new StudyDbError(error?.message ?? 'Could not add the date')
+  return data as CalendarEvent
+}
+
+export async function updateCalendarEvent(
+  id: string,
+  patch: Partial<Pick<CalendarEvent, 'title' | 'kind' | 'event_date' | 'notes' | 'completed' | 'mission_id' | 'topic_id'>>,
+): Promise<void> {
+  const db = requireDb()
+  const { error } = await db.from('calendar_events').update(patch).eq('id', id)
+  if (error) throw new StudyDbError(error.message)
+}
+
+export async function deleteCalendarEvent(id: string): Promise<void> {
+  const db = requireDb()
+  await db.from('calendar_events').delete().eq('id', id)
+}
+
+// --- recurring routines --------------------------------------------------
+
+export interface RoutineInput {
+  user_id: string
+  title: string
+  cadence: RoutineCadence
+  weekday: number
+  mission_id?: string | null
+}
+
+export async function fetchRoutines(userId: string): Promise<Routine[]> {
+  if (!supabase) return []
+  const { data, error } = await supabase
+    .from('routines')
+    .select('*')
+    .eq('user_id', userId)
+    .order('created_at', { ascending: true })
+  if (error) throw new StudyDbError(error.message)
+  return (data ?? []) as Routine[]
+}
+
+export async function createRoutine(input: RoutineInput): Promise<Routine> {
+  const db = requireDb()
+  const { data, error } = await db
+    .from('routines')
+    .insert({
+      user_id: input.user_id,
+      title: input.title.trim() || 'Recurring task',
+      cadence: input.cadence,
+      weekday: input.weekday,
+      anchor_date: toDayString(new Date()),
+      mission_id: input.mission_id ?? null,
+    })
+    .select('*')
+    .single()
+  if (error || !data) throw new StudyDbError(error?.message ?? 'Could not add the routine')
+  return data as Routine
+}
+
+export async function setRoutineActive(id: string, active: boolean): Promise<void> {
+  const db = requireDb()
+  await db.from('routines').update({ active }).eq('id', id)
+}
+
+export async function deleteRoutine(id: string): Promise<void> {
+  const db = requireDb()
+  await db.from('routines').delete().eq('id', id)
+}
+
+export async function setRoutineOccurrenceStatus(
+  id: string,
+  status: RoutineOccurrenceStatus,
+): Promise<void> {
+  const db = requireDb()
+  await db
+    .from('routine_occurrences')
+    .update({
+      status,
+      completed_at: status === 'done' ? new Date().toISOString() : null,
+    })
+    .eq('id', id)
+}
+
+/**
+ * Materialise routine occurrences for the horizon ahead and flag overdue ones
+ * as missed. Safe to call repeatedly — inserts are `ignoreDuplicates`.
+ */
+export async function ensureRoutineOccurrences(
+  userId: string,
+  horizonDays = 21,
+): Promise<RoutineOccurrence[]> {
+  if (!supabase) return []
+  const today = toDayString(new Date())
+
+  const { data: routines } = await supabase
+    .from('routines')
+    .select('*')
+    .eq('user_id', userId)
+    .eq('active', true)
+
+  const rows: { routine_id: string; user_id: string; due_date: string }[] = []
+  for (const r of (routines ?? []) as Routine[]) {
+    for (const due of routineOccurrenceDates(r, today, horizonDays)) {
+      rows.push({ routine_id: r.id, user_id: userId, due_date: due })
+    }
+  }
+  if (rows.length) {
+    await supabase
+      .from('routine_occurrences')
+      .upsert(rows, { onConflict: 'routine_id,due_date', ignoreDuplicates: true })
+  }
+
+  // Overdue pending → missed.
+  await supabase
+    .from('routine_occurrences')
+    .update({ status: 'missed' })
+    .eq('user_id', userId)
+    .eq('status', 'pending')
+    .lt('due_date', today)
+
+  const { data, error } = await supabase
+    .from('routine_occurrences')
+    .select('*')
+    .eq('user_id', userId)
+    .gte('due_date', addDays(today, -21).toISOString().slice(0, 10))
+    .lte('due_date', addDays(today, horizonDays).toISOString().slice(0, 10))
+    .order('due_date', { ascending: true })
+  if (error) throw new StudyDbError(error.message)
+  return (data ?? []) as RoutineOccurrence[]
+}
+
+// --- the Inbox aggregate ------------------------------------------------
+
+export interface InboxData {
+  missions: { id: string; title: string; subject_id: string }[]
+  reminderSessions: {
+    id: string
+    missionId: string
+    topicId: string
+    kind: string
+    scheduled_date: string
+  }[]
+  events: CalendarEvent[]
+  routineOccurrences: RoutineOccurrence[]
+  routineTitles: Record<string, string>
+  notifications: StudyNotification[]
+  lastDailyDigest: { reason: string | null; created_at: string } | null
+}
+
+/** Cheap count for the sidebar badge: unread decisions + overdue/today items. */
+export async function fetchInboxCount(userId: string): Promise<number> {
+  if (!supabase) return 0
+  const today = toDayString(new Date())
+  const head = { count: 'exact' as const, head: true }
+  const [notif, sessions, events, routines] = await Promise.all([
+    supabase.from('notifications').select('id', head).eq('user_id', userId).eq('read', false),
+    supabase.from('plan_sessions').select('id', head).eq('status', 'pending').lte('scheduled_date', today),
+    supabase.from('calendar_events').select('id', head).eq('user_id', userId).eq('completed', false).lte('event_date', today),
+    supabase.from('routine_occurrences').select('id', head).eq('user_id', userId).neq('status', 'done').lte('due_date', today),
+  ])
+  return (
+    (notif.count ?? 0) +
+    (sessions.count ?? 0) +
+    (events.count ?? 0) +
+    (routines.count ?? 0)
+  )
+}
+
+/** Everything the Inbox needs, in one shot. */
+export async function fetchInbox(userId: string): Promise<InboxData> {
+  const empty: InboxData = {
+    missions: [],
+    reminderSessions: [],
+    events: [],
+    routineOccurrences: [],
+    routineTitles: {},
+    notifications: [],
+    lastDailyDigest: null,
+  }
+  if (!supabase) return empty
+
+  const today = toDayString(new Date())
+  const horizon = addDays(today, 21).toISOString().slice(0, 10)
+
+  const [missionsRes, eventsRes, notifsRes] = await Promise.all([
+    supabase
+      .from('study_missions')
+      .select('id, subject_id, title')
+      .eq('user_id', userId)
+      .eq('status', 'active'),
+    fetchCalendarEvents(userId, { from: addDays(today, -3).toISOString().slice(0, 10), to: horizon }),
+    fetchNotifications(userId, { unreadOnly: true, limit: 30 }),
+  ])
+
+  const missions = (missionsRes.data ?? []) as { id: string; subject_id: string; title: string }[]
+
+  let reminderSessions: InboxData['reminderSessions'] = []
+  if (missions.length) {
+    const { data: sessions } = await supabase
+      .from('plan_sessions')
+      .select('id, mission_id, topic_id, kind, scheduled_date, status')
+      .in('mission_id', missions.map((m) => m.id))
+      .eq('status', 'pending')
+      .lte('scheduled_date', horizon)
+      .order('scheduled_date', { ascending: true })
+    reminderSessions = ((sessions ?? []) as PlanSession[]).map((s) => ({
+      id: s.id,
+      missionId: s.mission_id,
+      topicId: s.topic_id, // screens resolve the Atlas display name
+      kind: s.kind,
+      scheduled_date: s.scheduled_date,
+    }))
+  }
+
+  const routineOccurrences = await ensureRoutineOccurrences(userId, 21)
+  const routines = await fetchRoutines(userId)
+
+  const { data: digest } = await supabase
+    .from('agent_events')
+    .select('reason, created_at')
+    .eq('trigger', 'DAILY')
+    .order('created_at', { ascending: false })
+    .limit(1)
+    .maybeSingle()
+
+  return {
+    missions,
+    reminderSessions,
+    events: eventsRes,
+    routineOccurrences,
+    routineTitles: Object.fromEntries(routines.map((r) => [r.id, r.title])),
+    notifications: notifsRes,
+    lastDailyDigest: digest
+      ? { reason: digest.reason ?? null, created_at: digest.created_at }
+      : null,
+  }
 }
