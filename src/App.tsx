@@ -12,6 +12,11 @@ import { StoryChallenge } from './screens/StoryChallenge'
 import { Quests } from './screens/Quests'
 import { LearnMode } from './screens/LearnMode'
 import { Profile } from './screens/Profile'
+import { MissionsHome } from './screens/MissionsHome'
+import { MissionCreate } from './screens/MissionCreate'
+import { MissionDiagnostic } from './screens/MissionDiagnostic'
+import { StudyPlan } from './screens/StudyPlan'
+import { MissionSession } from './screens/MissionSession'
 
 export default function App() {
   return (
@@ -33,6 +38,17 @@ export default function App() {
         <Route path="story/:chapterId" element={<StoryChapter />} />
         <Route path="story/:chapterId/:levelId" element={<StoryChallenge />} />
         <Route path="quests" element={<Quests />} />
+        <Route path="missions" element={<MissionsHome />} />
+        <Route path="missions/new" element={<MissionCreate />} />
+        <Route path="missions/:missionId" element={<StudyPlan />} />
+        <Route
+          path="missions/:missionId/diagnostic"
+          element={<MissionDiagnostic />}
+        />
+        <Route
+          path="missions/:missionId/s/:planSessionId"
+          element={<MissionSession />}
+        />
         <Route path="learn" element={<LearnMode />} />
         <Route path="profile" element={<Profile />} />
       </Route>
