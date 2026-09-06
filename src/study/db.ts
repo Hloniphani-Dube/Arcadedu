@@ -387,6 +387,50 @@ export async function markNotificationRead(id: string): Promise<void> {
   await supabase.from('notifications').update({ read: true }).eq('id', id)
 }
 
+export interface CalendarSession {
+  id: string
+  missionId: string
+  subjectId: string
+  topicId: string
+  kind: string
+  scheduled_date: string
+  status: string
+}
+
+/** All plan sessions across the user's active missions, for the calendar grid. */
+export async function fetchCalendarSessions(
+  userId: string,
+): Promise<CalendarSession[]> {
+  if (!supabase) return []
+  const { data: missions } = await supabase
+    .from('study_missions')
+    .select('id, subject_id')
+    .eq('user_id', userId)
+    .eq('status', 'active')
+  const list = (missions ?? []) as { id: string; subject_id: string }[]
+  if (!list.length) return []
+  const subjectByMission = new Map(list.map((m) => [m.id, m.subject_id]))
+
+  const { data, error } = await supabase
+    .from('plan_sessions')
+    .select('id, mission_id, topic_id, kind, scheduled_date, status')
+    .in(
+      'mission_id',
+      list.map((m) => m.id),
+    )
+    .order('scheduled_date', { ascending: true })
+  if (error) throw new StudyDbError(error.message)
+  return ((data ?? []) as PlanSession[]).map((s) => ({
+    id: s.id,
+    missionId: s.mission_id,
+    subjectId: subjectByMission.get(s.mission_id) ?? '',
+    topicId: s.topic_id,
+    kind: s.kind,
+    scheduled_date: s.scheduled_date,
+    status: s.status,
+  }))
+}
+
 // --- academic calendar -----------------------------------------------------
 
 export interface CalendarEventInput {

@@ -9,7 +9,7 @@ import {
   selectSubjectProgress,
 } from '../store'
 import { useAuth } from '../auth/auth-context'
-import { Bar, Btn, Panel } from '../components/ui'
+import { Bar, Btn, Panel, PageHeader, SectionTitle } from '../components/ui'
 import { Avatar, AVATAR_ICONS, DEFAULT_AVATAR, SubjectIcon } from '../components/icons'
 import { fileToAvatarDataUrl } from '../lib/image'
 
@@ -39,8 +39,8 @@ export function Profile() {
   }
 
   return (
-    <div className="mx-auto max-w-2xl">
-      <h1 className="title-serif mb-4 text-3xl">Traveller</h1>
+    <div>
+      <PageHeader title="Traveller" subtitle="Your name, look and progress." />
 
       <Panel className="p-5">
         <div className="flex items-center gap-4">
@@ -120,10 +120,10 @@ export function Profile() {
         </div>
       </Panel>
 
-      <div className="mt-4 text-xs font-semibold uppercase tracking-wide text-muted">
-        Subjects
+      <div className="mt-8">
+        <SectionTitle>Subjects</SectionTitle>
       </div>
-      <div className="mt-2 flex flex-col gap-2">
+      <div className="flex flex-col gap-2">
         {SUBJECTS.map((s) => {
           const unlocked = selectSubjectUnlocked(app, s.id)
           const progress = selectSubjectProgress(app, s.id)

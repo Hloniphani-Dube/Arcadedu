@@ -80,7 +80,7 @@ export const DesktopSidebar = ({
   return (
     <motion.div
       className={cn(
-        'arcade-frame h-full w-[300px] flex-shrink-0 border-r border-edge bg-panel px-4 py-4 hidden md:flex md:flex-col',
+        'sticky top-0 h-dvh w-[300px] flex-shrink-0 border-r-2 border-edge bg-panel px-4 py-4 hidden md:flex md:flex-col',
         className,
       )}
       animate={{ width: animate ? (open ? '300px' : '68px') : '300px' }}

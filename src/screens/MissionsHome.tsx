@@ -7,7 +7,14 @@ import { getSubject } from '../game/atlas'
 import { fetchMissions } from '../study/db'
 import { daysBetween } from '../study/dates'
 import type { StudyMission } from '../study/types'
-import { Panel, Btn, Spinner } from '../components/ui'
+import {
+  Panel,
+  Btn,
+  Spinner,
+  PageHeader,
+  EmptyState,
+  Chip,
+} from '../components/ui'
 
 export function MissionsHome() {
   const { user, unconfigured } = useAuth()
@@ -26,25 +33,21 @@ export function MissionsHome() {
   }, [user])
 
   return (
-    <div className="mx-auto max-w-3xl">
-      <header className="mb-6 flex items-end justify-between gap-4">
-        <div>
-          <h1 className="title-serif text-3xl">Study Missions</h1>
-          <p className="mt-2 text-sm text-muted">
-            Set a goal and a deadline. The agent keeps the plan honest as your
-            week changes — and stays quiet unless it needs a decision from you.
-          </p>
-        </div>
-        {!unconfigured && (
-          <Link to="/missions/new">
-            <Btn variant="primary">
-              <span className="flex items-center gap-1.5">
+    <div>
+      <PageHeader
+        icon={<Target className="h-5 w-5" />}
+        title="Study Missions"
+        subtitle="Set a goal and a deadline. The agent keeps the plan honest as your week changes — and stays quiet unless it needs a decision from you."
+        actions={
+          !unconfigured && (
+            <Link to="/missions/new">
+              <Btn variant="primary">
                 <Plus className="h-4 w-4" /> New mission
-              </span>
-            </Btn>
-          </Link>
-        )}
-      </header>
+              </Btn>
+            </Link>
+          )
+        }
+      />
 
       {unconfigured && (
         <Panel className="p-5 text-sm text-muted">
@@ -64,19 +67,18 @@ export function MissionsHome() {
       )}
 
       {!unconfigured && missions?.length === 0 && (
-        <Panel className="flex flex-col items-start gap-3 p-6">
-          <span className="grid h-11 w-11 place-items-center rounded-xl border border-edge bg-panel-2 text-mana-bright">
-            <Target className="h-5 w-5" />
-          </span>
-          <div className="font-bold">No missions yet</div>
-          <p className="text-sm text-muted">
-            Create one from an Atlas subject — pick the topics your exam covers,
-            set the date, and run a short diagnostic.
-          </p>
-          <Link to="/missions/new">
-            <Btn variant="primary">Create your first mission</Btn>
-          </Link>
-        </Panel>
+        <EmptyState
+          icon={<Target className="h-5 w-5" />}
+          title="No missions yet"
+          action={
+            <Link to="/missions/new">
+              <Btn variant="primary">Create your first mission</Btn>
+            </Link>
+          }
+        >
+          Create one from an Atlas subject — pick the topics your exam covers, set
+          the date, and run a short diagnostic.
+        </EmptyState>
       )}
 
       <div className="flex flex-col gap-3">
@@ -91,17 +93,15 @@ export function MissionsHome() {
               transition={{ delay: i * 0.05 }}
             >
               <Link to={`/missions/${m.id}`} className="block">
-                <Panel className="flex items-center gap-4 p-4 transition hover:border-mana">
-                  <span className="grid h-11 w-11 flex-shrink-0 place-items-center rounded-xl border border-edge bg-panel-2 text-mana-bright">
+                <Panel interactive className="flex items-center gap-4 p-4">
+                  <span className="grid h-11 w-11 flex-shrink-0 place-items-center border border-edge bg-panel-2 text-mana-bright">
                     <Target className="h-5 w-5" />
                   </span>
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-2">
                       <span className="truncate font-bold">{m.title}</span>
                       {m.status !== 'active' && (
-                        <span className="rounded-md border border-edge px-1.5 py-0.5 text-[10px] uppercase tracking-wide text-muted">
-                          {m.status}
-                        </span>
+                        <Chip>{m.status}</Chip>
                       )}
                     </div>
                     <div className="mt-1 flex items-center gap-1.5 text-xs text-muted">

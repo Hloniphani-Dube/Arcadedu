@@ -1,5 +1,5 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
-import { Link } from 'react-router-dom'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { Link, useNavigate } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import {
   BookOpen,
@@ -11,6 +11,11 @@ import {
 } from 'lucide-react'
 import { useAuth } from '../auth/auth-context'
 import { getTopic } from '../game/atlas'
+import {
+  MonthCalendar,
+  type DayMarker,
+  type MarkerTone,
+} from '../study/MonthCalendar'
 import {
   fetchInbox,
   markNotificationRead,
@@ -24,7 +29,14 @@ import { buildReminders } from '../study/calendar'
 import { toDayString, daysBetween } from '../study/dates'
 import type { Reminder, StudyNotification } from '../study/types'
 import { NotificationCard } from '../study/NotificationCard'
-import { Panel, Btn, Spinner } from '../components/ui'
+import {
+  Panel,
+  Btn,
+  Spinner,
+  PageHeader,
+  SectionTitle,
+  EmptyState,
+} from '../components/ui'
 
 function group(reminders: Reminder[]) {
   return {
@@ -40,10 +52,15 @@ const SOURCE_ICON = {
   routine: Repeat,
 } as const
 
+const firstOfMonth = (d = new Date()) =>
+  new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), 1))
+
 export function Inbox() {
   const { user, unconfigured } = useAuth()
+  const navigate = useNavigate()
   const today = toDayString(new Date())
   const [data, setData] = useState<InboxData | null>(null)
+  const [month, setMonth] = useState(() => firstOfMonth())
   const [error, setError] = useState<string | null>(null)
 
   const load = useCallback(async () => {
@@ -54,6 +71,27 @@ export function Inbox() {
       setError(e instanceof Error ? e.message : 'Could not load your inbox')
     }
   }, [user])
+
+  const markersByDay = useMemo(() => {
+    const map: Record<string, DayMarker[]> = {}
+    if (!data) return map
+    const subById = new Map(data.missions.map((m) => [m.id, m.subject_id]))
+    const push = (day: string, mk: DayMarker) => {
+      ;(map[day] ??= []).push(mk)
+    }
+    for (const e of data.events) {
+      if (e.completed) continue
+      push(e.event_date, { id: `e${e.id}`, label: e.title, tone: e.kind as MarkerTone })
+    }
+    for (const s of data.reminderSessions) {
+      push(s.scheduled_date, {
+        id: `s${s.id}`,
+        label: getTopic(subById.get(s.missionId), s.topicId)?.name ?? s.topicId,
+        tone: 'session',
+      })
+    }
+    return map
+  }, [data])
 
   const loadedFor = useRef<string | null>(null)
   useEffect(() => {
@@ -147,42 +185,56 @@ export function Inbox() {
     reminders.length === 0 && inbox.notifications.length === 0
 
   return (
-    <div className="mx-auto max-w-2xl">
-      <header className="mb-5 flex items-center gap-3">
-        <span className="grid h-10 w-10 place-items-center rounded-xl border border-edge bg-panel-2 text-mana-bright">
-          <InboxIcon className="h-5 w-5" />
-        </span>
-        <div>
-          <h1 className="title-serif text-3xl">Inbox</h1>
-          <p className="text-xs text-muted">
-            What's on your plate, and the few things the agent needs you to
-            decide.
-          </p>
-        </div>
-      </header>
+    <div>
+      <PageHeader
+        icon={<InboxIcon className="h-5 w-5" />}
+        title="Inbox"
+        subtitle="What's on your plate, and the few things the agent needs you to decide."
+      />
 
       {digest && (
-        <Panel className="mb-6 flex items-start gap-3 border-mana/30 bg-mana/5 p-4">
+        <Panel className="mb-6 flex items-start gap-3 border-mana/40 bg-mana/5 p-4">
           <Sparkles className="mt-0.5 h-4 w-4 flex-shrink-0 text-mana-bright" />
           <div className="min-w-0 text-sm">
-            <span className="font-semibold text-mana-bright">Agent</span>{' '}
+            <span className="font-bold text-mana-bright">AGENT</span>{' '}
             <span className="text-muted">
-              · {daysBetween(digest.created_at.slice(0, 10), today) === 0
+              ·{' '}
+              {daysBetween(digest.created_at.slice(0, 10), today) === 0
                 ? 'today'
                 : digest.created_at.slice(0, 10)}
             </span>
-            <p className="mt-0.5 text-ink">
+            <p className="mt-1 text-ink">
               {digest.reason || 'Reviewed your plan — nothing needs you.'}
             </p>
           </div>
         </Panel>
       )}
 
+      <section className="mb-8">
+        <SectionTitle
+          actions={
+            <Link
+              to="/calendar"
+              className="text-xs font-semibold text-mana-bright hover:underline"
+            >
+              Open calendar
+            </Link>
+          }
+        >
+          This month
+        </SectionTitle>
+        <MonthCalendar
+          compact
+          month={month}
+          onMonthChange={setMonth}
+          markersByDay={markersByDay}
+          onSelectDay={() => navigate('/calendar')}
+        />
+      </section>
+
       {inbox.notifications.length > 0 && (
         <section className="mb-8">
-          <h2 className="mb-2 text-sm font-bold uppercase tracking-wide text-hp">
-            Needs you
-          </h2>
+          <SectionTitle className="[&>h2]:text-hp">Needs you</SectionTitle>
           <div className="flex flex-col gap-3">
             {inbox.notifications.map((n) => (
               <NotificationCard
@@ -197,19 +249,16 @@ export function Inbox() {
       )}
 
       <section>
-        <h2 className="mb-2 text-sm font-bold uppercase tracking-wide text-muted">
-          On your plate
-        </h2>
+        <SectionTitle>On your plate</SectionTitle>
 
         {nothing && (
-          <Panel className="flex flex-col items-start gap-2 p-6">
-            <CheckCircle2 className="h-6 w-6 text-heal" />
-            <div className="font-bold">You're all caught up</div>
-            <p className="text-sm text-muted">
-              The agent is watching your plan and calendar in the background. It
-              will surface here only when something needs doing or deciding.
-            </p>
-          </Panel>
+          <EmptyState
+            icon={<CheckCircle2 className="h-5 w-5 text-heal" />}
+            title="You're all caught up"
+          >
+            The agent is watching your plan and calendar in the background. It
+            will surface here only when something needs doing or deciding.
+          </EmptyState>
         )}
 
         <ReminderGroup label="Overdue" tone="text-hp" items={groups.overdue} onComplete={completeReminder} />
@@ -259,10 +308,14 @@ function ReminderGroup({
                   <Link
                     to={`/missions/${r.ref.missionId}/s/${r.ref.planSessionId}`}
                   >
-                    <Btn variant="primary">Start</Btn>
+                    <Btn variant="primary" size="sm">
+                      Start
+                    </Btn>
                   </Link>
                 ) : (
-                  <Btn onClick={() => void onComplete(r)}>Mark done</Btn>
+                  <Btn size="sm" onClick={() => void onComplete(r)}>
+                    Mark done
+                  </Btn>
                 )}
               </Panel>
             </motion.div>

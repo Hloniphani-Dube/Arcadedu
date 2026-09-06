@@ -14,15 +14,15 @@
     />
 
     <script>
-      // Apply the saved theme before first paint to avoid a flash.
+      // Apply the saved colour mode before first paint to avoid a flash.
+      // Skin is always "arcade".
       try {
         var t = JSON.parse(localStorage.getItem('arcadedu.theme.v1') || '{}').state || {}
-        var skin = t.skin === 'arcade' ? 'arcade' : 'normal'
         var mode = t.mode || 'system'
         if (mode === 'system') {
           mode = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'
         }
-        document.documentElement.dataset.skin = skin
+        document.documentElement.dataset.skin = 'arcade'
         document.documentElement.dataset.theme = mode
       } catch (e) {}
     </script>

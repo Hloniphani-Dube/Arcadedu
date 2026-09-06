@@ -1,15 +1,22 @@
-import { useRef, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
-import { Check, MapPin } from 'lucide-react'
+import { useMemo, useRef, useState } from 'react'
+import { Link, useNavigate } from 'react-router-dom'
+import { Check, MapPin, ChevronRight, Compass } from 'lucide-react'
 import {
   SUBJECTS,
   CONTINENTS,
   ATLAS_VIEWBOX,
   type Subject,
 } from '../game/atlas'
-import { useApp, selectSubjectProgress } from '../store'
+import { levelProgress } from '../game/engine'
+import {
+  useApp,
+  selectSubjectProgress,
+  selectTopicState,
+} from '../store'
+import { useAuth } from '../auth/auth-context'
+import { useInboxCount } from '../study/useInboxCount'
 import { SubjectIcon } from '../components/icons'
-import { Panel } from '../components/ui'
+import { Panel, PageHeader, SectionTitle, Stat, Bar } from '../components/ui'
 
 const MIN_SCALE = 0.7
 const MAX_SCALE = 2.6
@@ -17,13 +24,45 @@ const MAX_SCALE = 2.6
 export function Atlas() {
   const navigate = useNavigate()
   const app = useApp()
+  const { user } = useAuth()
+  const inboxCount = useInboxCount()
 
   const [hovered, setHovered] = useState<string | null>(null)
   const [view, setView] = useState({ x: 0, y: 0, scale: 1 })
   const drag = useRef<{ x: number; y: number; vx: number; vy: number } | null>(null)
   const svgRef = useRef<SVGSVGElement>(null)
 
-  // recompute against live state
+  const name = app.profile.name || user?.email?.split('@')[0] || 'Adventurer'
+  const lvl = levelProgress(app.profile.xp)
+
+  const inProgress = useMemo(() => {
+    const out: {
+      subjectId: string
+      subjectName: string
+      topicId: string
+      topicName: string
+      cleared: number
+      total: number
+      next: string
+    }[] = []
+    for (const s of SUBJECTS) {
+      for (const t of s.topics) {
+        const st = selectTopicState(app, s.id, t.id)
+        if (st.completed.length === 0 || st.completed.length >= t.nodes.length) continue
+        out.push({
+          subjectId: s.id,
+          subjectName: s.name,
+          topicId: t.id,
+          topicName: t.name,
+          cleared: st.completed.length,
+          total: t.nodes.length,
+          next: t.nodes.find((n) => !st.completed.includes(n.id))?.title ?? '',
+        })
+      }
+    }
+    return out.slice(0, 3)
+  }, [app])
+
   const stateOf = (s: Subject) => {
     const progress = selectSubjectProgress(app, s.id)
     return { progress, done: progress >= 1 }
@@ -31,50 +70,118 @@ export function Atlas() {
 
   function onWheel(e: React.WheelEvent) {
     e.preventDefault()
-    setView((v) => {
-      const next = Math.min(MAX_SCALE, Math.max(MIN_SCALE, v.scale * (e.deltaY < 0 ? 1.12 : 0.9)))
-      return { ...v, scale: next }
-    })
+    setView((v) => ({
+      ...v,
+      scale: Math.min(
+        MAX_SCALE,
+        Math.max(MIN_SCALE, v.scale * (e.deltaY < 0 ? 1.12 : 0.9)),
+      ),
+    }))
   }
-
   function onPointerDown(e: React.PointerEvent) {
     ;(e.target as Element).setPointerCapture?.(e.pointerId)
     drag.current = { x: e.clientX, y: e.clientY, vx: view.x, vy: view.y }
   }
   function onPointerMove(e: React.PointerEvent) {
     if (!drag.current) return
-    const dx = e.clientX - drag.current.x
-    const dy = e.clientY - drag.current.y
-    setView((v) => ({ ...v, x: drag.current!.vx + dx, y: drag.current!.vy + dy }))
+    setView((v) => ({
+      ...v,
+      x: drag.current!.vx + (e.clientX - drag.current!.x),
+      y: drag.current!.vy + (e.clientY - drag.current!.y),
+    }))
   }
   function onPointerUp() {
     drag.current = null
-  }
-
-  function openSubject(s: Subject) {
-    navigate(`/s/${s.id}`)
   }
 
   const hoverSubject = SUBJECTS.find((s) => s.id === hovered)
 
   return (
     <div>
-      <header className="mb-4 flex flex-wrap items-end justify-between gap-2">
-        <div>
-          <h1 className="title-serif text-3xl">The Learning Atlas</h1>
-          <p className="mt-1 text-sm text-muted">
-            Every country is a subject. Sail to one to begin its expedition.
-          </p>
+      <PageHeader
+        icon={<Compass className="h-5 w-5" />}
+        title={`Welcome back, ${name}`}
+        subtitle="Pick up where you left off, or set out for a new region."
+      />
+
+      <Panel className="mb-6 grid grid-cols-2 gap-4 p-5 sm:grid-cols-4">
+        <Stat label={`Level ${lvl.level}`} value={app.profile.xp} tone="xp" hint="total XP" />
+        <div className="col-span-1 sm:col-span-1">
+          <div className="text-xs uppercase tracking-wide text-muted">
+            To level {lvl.level + 1}
+          </div>
+          <div className="mt-2">
+            <Bar value={lvl.pct} tone="xp" showValue={false} segments={16} />
+          </div>
+          <div className="mt-1 text-[11px] text-muted">
+            {lvl.into} / {lvl.span} XP
+          </div>
         </div>
-        <div className="text-xs text-muted">drag to pan · scroll to zoom</div>
-      </header>
+        <Stat
+          label="In progress"
+          value={inProgress.length}
+          tone="mana"
+          hint="topics"
+        />
+        <Link to="/inbox" className="block">
+          <Stat
+            label="Inbox"
+            value={inboxCount}
+            tone={inboxCount > 0 ? 'hp' : 'ink'}
+            hint="items waiting"
+          />
+        </Link>
+      </Panel>
+
+      {inProgress.length > 0 && (
+        <section className="mb-8">
+          <SectionTitle>Jump back in</SectionTitle>
+          <div className="grid gap-3 sm:grid-cols-3">
+            {inProgress.map((q) => (
+              <Link
+                key={`${q.subjectId}/${q.topicId}`}
+                to={`/s/${q.subjectId}/${q.topicId}`}
+              >
+                <Panel interactive className="flex h-full flex-col gap-2 p-4">
+                  <div className="flex items-center gap-2">
+                    <span className="grid h-8 w-8 flex-shrink-0 place-items-center border border-edge bg-panel-2 text-mana-bright">
+                      <SubjectIcon id={q.subjectId} className="h-4 w-4" />
+                    </span>
+                    <div className="min-w-0">
+                      <div className="truncate text-sm font-bold">{q.topicName}</div>
+                      <div className="text-[11px] text-muted">{q.subjectName}</div>
+                    </div>
+                  </div>
+                  <Bar value={q.cleared} max={q.total} tone="mana" showValue={false} segments={12} />
+                  <div className="mt-auto flex items-center justify-between text-[11px] text-muted">
+                    <span>{q.cleared}/{q.total} cleared</span>
+                    <span className="flex items-center gap-0.5 text-mana-bright">
+                      Continue <ChevronRight className="h-3 w-3" />
+                    </span>
+                  </div>
+                </Panel>
+              </Link>
+            ))}
+          </div>
+        </section>
+      )}
+
+      <SectionTitle
+        actions={
+          <span className="text-[11px] normal-case tracking-normal text-muted">
+            drag to pan · scroll to zoom
+          </span>
+        }
+      >
+        Explore the Atlas
+      </SectionTitle>
 
       <div className="grid gap-4 lg:grid-cols-[1fr_260px]">
         <Panel className="relative overflow-hidden p-0">
           <svg
             ref={svgRef}
             viewBox={`0 0 ${ATLAS_VIEWBOX.w} ${ATLAS_VIEWBOX.h}`}
-            className="block h-[62vh] w-full cursor-grab touch-none select-none active:cursor-grabbing"
+            className="block h-[58vh] w-full cursor-grab touch-none select-none active:cursor-grabbing"
             onWheel={onWheel}
             onPointerDown={onPointerDown}
             onPointerMove={onPointerMove}
@@ -104,7 +211,6 @@ export function Atlas() {
             />
 
             <g transform={`translate(${view.x} ${view.y}) scale(${view.scale})`}>
-              {/* latitude/longitude hint lines */}
               {Array.from({ length: 7 }).map((_, i) => (
                 <line
                   key={`h${i}`}
@@ -136,11 +242,11 @@ export function Atlas() {
                   x={c.label[0]}
                   y={c.label[1]}
                   textAnchor="middle"
-                  className="title-serif"
                   fill="var(--color-muted)"
-                  fontSize={17}
-                  letterSpacing={4}
-                  opacity={0.65}
+                  fontSize={13}
+                  letterSpacing={3}
+                  opacity={0.6}
+                  style={{ fontFamily: 'var(--font-display)' }}
                 >
                   {c.name.toUpperCase()}
                 </text>
@@ -157,7 +263,7 @@ export function Atlas() {
                 return (
                   <g
                     key={s.id}
-                    onClick={() => openSubject(s)}
+                    onClick={() => navigate(`/s/${s.id}`)}
                     onMouseEnter={() => setHovered(s.id)}
                     onMouseLeave={() => setHovered(null)}
                     className="cursor-pointer"
@@ -167,7 +273,7 @@ export function Atlas() {
                     <path
                       d={s.region}
                       fill={fill}
-                      fillOpacity={progress > 0 ? 0.28 : 0.9}
+                      fillOpacity={progress > 0 ? 0.3 : 0.9}
                       stroke="var(--color-mana-bright)"
                       strokeWidth={isHover ? 3 : 1.6}
                       filter={isHover ? 'url(#glow)' : undefined}
@@ -177,10 +283,9 @@ export function Atlas() {
                       x={s.center[0]}
                       y={s.center[1]}
                       textAnchor="middle"
-                      className="title-serif"
                       fill="var(--color-ink)"
-                      fontSize={16}
-                      fontWeight={600}
+                      fontSize={12}
+                      style={{ fontFamily: 'var(--font-display)' }}
                     >
                       {s.name}
                     </text>
@@ -202,13 +307,16 @@ export function Atlas() {
               <HoverCard subject={hoverSubject} state={stateOf(hoverSubject)} />
             ) : (
               <p className="text-sm text-muted">
-                Hover a region to preview it. Every world is open — sail wherever you like.
+                Hover a region to preview it. Every world is open — sail wherever
+                you like.
               </p>
             )}
           </Panel>
 
           <Panel className="p-4 text-xs">
-            <div className="mb-2 font-semibold uppercase tracking-wide text-muted">Legend</div>
+            <div className="mb-2 font-bold uppercase tracking-[0.15em] text-muted">
+              Legend
+            </div>
             <LegendRow swatch="var(--color-panel)" label="Ready to explore" />
             <LegendRow swatch="var(--color-mana)" label="In progress" faded />
             <LegendRow swatch="var(--color-heal)" label="Completed" />
@@ -229,27 +337,18 @@ function HoverCard({
   return (
     <div>
       <div className="flex items-center gap-2">
-        <span className="grid h-8 w-8 place-items-center rounded-lg border border-edge bg-panel-2 text-mana-bright">
+        <span className="grid h-8 w-8 place-items-center border border-edge bg-panel-2 text-mana-bright">
           <SubjectIcon id={subject.id} className="h-4 w-4" />
         </span>
-        <div>
-          <div className="font-bold">{subject.name}</div>
+        <div className="min-w-0">
+          <div className="truncate font-bold">{subject.name}</div>
           <div className="text-xs text-muted">{subject.continent}</div>
         </div>
         {state.done && <Check className="ml-auto h-4 w-4 text-heal" />}
       </div>
       <p className="mt-2 text-sm text-muted">{subject.blurb}</p>
       <div className="mt-3">
-        <div className="mb-1 flex justify-between text-xs text-muted">
-          <span>Progress</span>
-          <span>{Math.round(state.progress * 100)}%</span>
-        </div>
-        <div className="h-2 w-full overflow-hidden rounded-full border border-edge bg-void">
-          <div
-            className="h-full rounded-full bg-mana"
-            style={{ width: `${Math.round(state.progress * 100)}%` }}
-          />
-        </div>
+        <Bar value={Math.round(state.progress * 100)} tone="mana" segments={16} />
         <div className="mt-2 flex items-center gap-1 text-xs text-mana-bright">
           <MapPin className="h-3.5 w-3.5" /> Click the region to enter
         </div>
@@ -262,23 +361,16 @@ function LegendRow({
   swatch,
   label,
   faded,
-  dashed,
 }: {
   swatch: string
   label: string
   faded?: boolean
-  dashed?: boolean
 }) {
   return (
     <div className="flex items-center gap-2 py-0.5">
       <span
-        className="h-3 w-4 rounded-sm border"
-        style={{
-          background: swatch,
-          opacity: faded ? 0.35 : 1,
-          borderStyle: dashed ? 'dashed' : 'solid',
-          borderColor: 'var(--color-edge)',
-        }}
+        className="h-3 w-4 border border-edge"
+        style={{ background: swatch, opacity: faded ? 0.4 : 1 }}
       />
       <span className="text-muted">{label}</span>
     </div>

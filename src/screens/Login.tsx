@@ -32,20 +32,20 @@ export function Login() {
   }
 
   return (
-    <div className="grid min-h-dvh place-items-center px-4 py-10">
+    <div className="bg-grid grid min-h-dvh place-items-center px-4 py-10">
       <motion.div
         initial={{ opacity: 0, y: 12 }}
         animate={{ opacity: 1, y: 0 }}
         className="w-full max-w-sm"
       >
         <div className="mb-6 text-center">
-          <span className="mx-auto mb-3 grid h-12 w-12 place-items-center rounded-xl bg-mana text-on-accent">
+          <span className="arcade-frame mx-auto mb-4 grid h-12 w-12 place-items-center border-2 border-edge bg-mana text-white">
             <Compass className="h-6 w-6" />
           </span>
-          <h1 className="title-serif text-3xl">
-            Arcad<span className="text-mana-bright">edu</span>
+          <h1 className="title-serif">
+            Arcad<span className="text-xp">edu</span>
           </h1>
-          <p className="mt-1 text-sm text-muted">
+          <p className="mt-2 text-sm text-muted">
             Sign in to chart your progress across the atlas.
           </p>
         </div>
@@ -77,7 +77,7 @@ export function Login() {
               <label className="text-xs font-semibold uppercase tracking-wide text-muted">
                 Email
               </label>
-              <div className="flex items-center gap-2 rounded-xl border border-edge bg-void px-3 focus-within:border-mana">
+              <div className="flex items-center gap-2 border-2 border-edge bg-void px-3 focus-within:border-mana">
                 <Mail className="h-4 w-4 text-muted" />
                 <input
                   type="email"
@@ -88,11 +88,14 @@ export function Login() {
                   className="w-full bg-transparent py-2.5 text-sm outline-none"
                 />
               </div>
-              <Btn type="submit" className="mt-1 w-full justify-center" disabled={busy}>
-                <span className="flex items-center justify-center gap-2">
-                  {busy ? 'Sending…' : 'Send me a sign-in link'}
-                  <ArrowRight className="h-4 w-4" />
-                </span>
+              <Btn
+                type="submit"
+                variant="primary"
+                className="mt-1 w-full"
+                disabled={busy}
+              >
+                {busy ? 'Sending…' : 'Send me a sign-in link'}
+                <ArrowRight className="h-4 w-4" />
               </Btn>
             </form>
           )}

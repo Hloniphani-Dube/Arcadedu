@@ -1,27 +1,24 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 
-/** Visual language. */
-export type Skin = 'normal' | 'arcade'
+/** Visual language. Arcadedu is arcade-only now — kept as a type for clarity. */
+export type Skin = 'arcade'
 /** Colour mode preference; 'system' follows the OS. */
 export type ThemeMode = 'light' | 'dark' | 'system'
 
 interface ThemeState {
+  /** Always 'arcade'. The skin toggle was removed. */
   skin: Skin
   mode: ThemeMode
-  setSkin: (skin: Skin) => void
   setMode: (mode: ThemeMode) => void
-  toggleSkin: () => void
 }
 
 export const useTheme = create<ThemeState>()(
   persist(
-    (set, get) => ({
-      skin: 'normal',
+    (set) => ({
+      skin: 'arcade',
       mode: 'system',
-      setSkin: (skin) => set({ skin }),
       setMode: (mode) => set({ mode }),
-      toggleSkin: () => set({ skin: get().skin === 'arcade' ? 'normal' : 'arcade' }),
     }),
     { name: 'arcadedu.theme.v1' },
   ),

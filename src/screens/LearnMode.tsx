@@ -3,9 +3,10 @@ import { askAria, AiError } from '../lib/ai'
 import type { LearnAction } from '../lib/types'
 import { SUBJECTS } from '../game/atlas'
 import { useApp, selectLevel } from '../store'
+import { GraduationCap } from 'lucide-react'
 import { ActionBar } from '../components/ActionBar'
 import { AriaSpeech, type AriaLine } from '../components/AriaSpeech'
-import { Panel } from '../components/ui'
+import { Panel, PageHeader } from '../components/ui'
 
 let seq = 0
 
@@ -48,13 +49,12 @@ export function LearnMode() {
   }
 
   return (
-    <div className="mx-auto max-w-5xl">
-      <header className="mb-4">
-        <h1 className="title-serif text-3xl">Study Hall</h1>
-        <p className="mt-1 text-sm text-muted">
-          Work a problem with ARIA. Ten fixed actions — no answer machine.
-        </p>
-      </header>
+    <div>
+      <PageHeader
+        icon={<GraduationCap className="h-5 w-5" />}
+        title="Study Hall"
+        subtitle="Work a problem with ARIA. Ten fixed actions — no answer machine."
+      />
 
       <div className="grid gap-4 lg:grid-cols-[1fr_1fr]">
         <div className="flex flex-col gap-4">

@@ -5,7 +5,7 @@ import { ArrowLeft, ChevronRight, Check } from 'lucide-react'
 import { getSubject } from '../game/atlas'
 import { useApp, selectSubjectUnlocked, selectTopicState } from '../store'
 import { SubjectIcon } from '../components/icons'
-import { Panel } from '../components/ui'
+import { Panel, Bar } from '../components/ui'
 
 export function Country() {
   const { subjectId } = useParams()
@@ -36,25 +36,26 @@ export function Country() {
         <ArrowLeft className="h-4 w-4" /> Atlas
       </Link>
 
-      <header className="mb-6">
+      <header className="bg-grid -mx-4 mb-6 border-b border-edge px-4 pb-6 pt-2 md:-mx-8 md:px-8">
         <div className="flex items-center gap-3">
-          <span className="grid h-12 w-12 place-items-center rounded-xl border border-edge bg-panel-2 text-mana-bright">
+          <span className="arcade-frame grid h-12 w-12 place-items-center border border-edge bg-panel text-mana-bright">
             <SubjectIcon id={subject.id} className="h-6 w-6" />
           </span>
           <div>
-            <h1 className="title-serif text-3xl">{subject.name}</h1>
-            <p className="text-xs uppercase tracking-wide text-muted">{subject.continent}</p>
+            <h1 className="title-serif">{subject.name}</h1>
+            <p className="text-[11px] uppercase tracking-[0.15em] text-muted">
+              {subject.continent}
+            </p>
           </div>
         </div>
-        <p className="mt-3 text-sm text-muted">{subject.blurb}</p>
-        <div className="mt-3">
-          <div className="mb-1 flex justify-between text-xs text-muted">
-            <span>Expedition progress</span>
-            <span>{Math.round(overall * 100)}%</span>
-          </div>
-          <div className="h-2 w-full overflow-hidden rounded-full border border-edge bg-void">
-            <div className="h-full rounded-full bg-mana" style={{ width: `${Math.round(overall * 100)}%` }} />
-          </div>
+        <p className="mt-3 max-w-prose text-sm text-muted">{subject.blurb}</p>
+        <div className="mt-4 max-w-sm">
+          <Bar
+            value={Math.round(overall * 100)}
+            tone="mana"
+            label="Expedition progress"
+            segments={20}
+          />
         </div>
       </header>
 

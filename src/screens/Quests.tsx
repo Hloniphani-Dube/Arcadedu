@@ -3,7 +3,7 @@ import { motion } from 'framer-motion'
 import { Swords, ChevronRight, Compass } from 'lucide-react'
 import { SUBJECTS } from '../game/atlas'
 import { useApp, selectSubjectUnlocked, selectTopicState } from '../store'
-import { Panel, Btn } from '../components/ui'
+import { Panel, Btn, PageHeader, EmptyState, Bar } from '../components/ui'
 import { SubjectIcon } from '../components/icons'
 
 interface Quest {
@@ -39,20 +39,25 @@ export function Quests() {
   }
 
   return (
-    <div className="mx-auto max-w-2xl">
-      <h1 className="title-serif mb-1 text-3xl">Active Expeditions</h1>
-      <p className="mb-5 text-sm text-muted">Topics you&apos;ve started but not yet finished.</p>
+    <div>
+      <PageHeader
+        icon={<Swords className="h-5 w-5" />}
+        title="Active Expeditions"
+        subtitle="Topics you've started but not yet finished."
+      />
 
       {active.length === 0 ? (
-        <Panel className="flex flex-col items-center gap-3 p-8 text-center">
-          <Compass className="h-8 w-8 text-muted" />
-          <p className="text-sm text-muted">
-            No expeditions underway. Open the atlas and set out.
-          </p>
-          <Link to="/">
-            <Btn variant="primary">Go to the Atlas</Btn>
-          </Link>
-        </Panel>
+        <EmptyState
+          icon={<Compass className="h-5 w-5" />}
+          title="No expeditions underway"
+          action={
+            <Link to="/">
+              <Btn variant="primary">Go to the Atlas</Btn>
+            </Link>
+          }
+        >
+          Open the atlas and set out.
+        </EmptyState>
       ) : (
         <div className="flex flex-col gap-3">
           {active.map((q, i) => (
@@ -63,8 +68,8 @@ export function Quests() {
               transition={{ delay: i * 0.05 }}
             >
               <Link to={`/s/${q.subjectId}/${q.topicId}`} className="block">
-                <Panel className="flex items-center gap-4 p-4 transition hover:border-mana">
-                  <span className="grid h-9 w-9 flex-shrink-0 place-items-center rounded-lg border border-edge bg-panel-2 text-mana-bright">
+                <Panel interactive className="flex items-center gap-4 p-4">
+                  <span className="grid h-9 w-9 flex-shrink-0 place-items-center border border-edge bg-panel-2 text-mana-bright">
                     <SubjectIcon id={q.subjectId} className="h-4 w-4" />
                   </span>
                   <div className="min-w-0 flex-1">
@@ -72,13 +77,19 @@ export function Quests() {
                       {q.subjectName} · {q.topicName}
                     </div>
                     <div className="mt-1 text-xs text-muted">
-                      {q.cleared}/{q.total} cleared · next: {q.nextTitle}
+                      next: {q.nextTitle}
+                    </div>
+                    <div className="mt-2 max-w-[220px]">
+                      <Bar
+                        value={q.cleared}
+                        max={q.total}
+                        tone="mana"
+                        showValue={false}
+                        segments={12}
+                      />
                     </div>
                   </div>
-                  <span className="flex items-center gap-1 text-sm font-semibold text-mana-bright">
-                    <Swords className="h-4 w-4" />
-                    <ChevronRight className="h-4 w-4" />
-                  </span>
+                  <ChevronRight className="h-4 w-4 text-mana-bright" />
                 </Panel>
               </Link>
             </motion.div>

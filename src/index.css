@@ -2,111 +2,69 @@
 @import 'tw-animate-css';
 
 /*
-  Theming model — two independent axes, both driven by data-attributes on <html>:
-    data-skin  = "normal" | "arcade"     (visual language: clean vs pixel/CRT)
-    data-theme = "light"  | "dark"       (colour mode; "system" is resolved to one of these by ThemeProvider)
-  Every colour below is a CSS variable so screens keep using the same utility
-  classes (bg-void, text-mana, …) and just flip when the attributes change.
+  Arcadedu visual system — arcade-only, Codecademy-inspired.
+
+  One axis now: data-theme = "light" | "dark" on <html> ("system" is resolved by
+  ThemeProvider). data-skin is always "arcade". Every colour is a CSS variable so
+  screens keep using the same utility classes (bg-void, text-mana, border-edge, …)
+  and just flip on the theme.
+
+  Identity: deep navy ground · indigo primary (--mana) · chartreuse highlight
+  (--xp) · pink danger (--hp) · mint success (--heal). Press Start 2P for
+  headings + buttons, VT323 for body. Chunky pixel frames, faint CRT scanlines.
 */
 
 @custom-variant dark (&:where([data-theme='dark'], [data-theme='dark'] *));
 
-/* ---------- NORMAL SKIN ---------- */
+/* ---------- palette ---------- */
 
-:root,
-[data-skin='normal'] {
-  --font-display: 'Trebuchet MS', 'Segoe UI', system-ui, sans-serif;
-  --font-serif: 'Iowan Old Style', 'Palatino Linotype', 'Georgia', serif;
-  --radius: 0.75rem;
-
-  /* Adventure cartography — light: aged parchment + sepia ink */
-  --void: #f4ecd8;
-  --panel: #fbf5e6;
-  --panel-2: #ece0c4;
-  --edge: #cbb78c;
-  --ink: #2b2419;
-  --muted: #6f6350;
-
-  /* brass primary, expedition green, terracotta danger, gold xp */
-  --mana: #9a6a1e;
-  --mana-bright: #7d551a;
-  --xp: #c8912f;
-  --hp: #b1402f;
-  --heal: #3f6b4c;
-
-  /* readable ink laid on a brass fill */
-  --on-accent: #fdf8ec;
-
-  --app-bg:
-    radial-gradient(1100px 620px at 50% -12%, #efe2c2 0%, transparent 62%),
-    radial-gradient(900px 500px at 88% 8%, #e9dabb 0%, transparent 55%),
-    var(--void);
-}
-
-[data-theme='dark'] {
-  /* oiled leather + candlelight */
-  --void: #1a1712;
-  --panel: #241f17;
-  --panel-2: #2e281d;
-  --edge: #4a4030;
-  --ink: #efe6d2;
-  --muted: #a9997d;
-
-  --mana: #d9a441;
-  --mana-bright: #f0c46a;
-  --xp: #ffd23f;
-  --hp: #d9694f;
-  --heal: #6fae7f;
-
-  --on-accent: #1f1913;
-
-  --app-bg:
-    radial-gradient(1100px 620px at 50% -12%, #2a2318 0%, transparent 62%),
-    radial-gradient(900px 500px at 88% 8%, #221d15 0%, transparent 55%),
-    var(--void);
-}
-
-/* ---------- ARCADE SKIN ---------- */
-
-[data-skin='arcade'] {
-  --font-display: 'VT323', 'Courier New', ui-monospace, monospace;
+:root {
+  --font-display: 'Press Start 2P', ui-monospace, monospace;
+  --font-body: 'VT323', 'Courier New', ui-monospace, monospace;
   --radius: 0px;
 
-  --void: #f7f4e8;
-  --panel: #fffef8;
-  --panel-2: #ece7d2;
-  --edge: #2b2b2b;
-  --ink: #1a1a1a;
-  --muted: #5a5a4a;
+  /* LIGHT — near-white lavender ground, navy ink, hard navy edges */
+  --void: #eceffb;
+  --panel: #ffffff;
+  --panel-2: #e2e7fb;
+  --edge: #101a3d;
+  --ink: #0d1732;
+  --muted: #55618f;
 
-  --mana: #8a5e1e;
-  --mana-bright: #6b4715;
-  --xp: #b7791f;
-  --hp: #b1402f;
-  --heal: #2e7d32;
+  --mana: #4b3bff;
+  --mana-bright: #6c5cff;
+  --xp: #5f7d00;
+  --hp: #d1355c;
+  --heal: #0d9c67;
 
-  --on-accent: #fdf8ec;
+  --on-accent: #ffffff;
 
   --app-bg: var(--void);
+  --grid-line: color-mix(in srgb, var(--edge) 10%, transparent);
 }
 
-[data-skin='arcade'][data-theme='dark'] {
-  --void: #0a0a12;
-  --panel: #14141f;
-  --panel-2: #1d1d2b;
-  --edge: #e6e6e6;
-  --ink: #f2f2f2;
-  --muted: #a8a8c0;
+:root:where([data-theme='dark']) {
+  /* DARK (primary) — near-black navy, bright ink, glowing accents */
+  --void: #080d1e;
+  --panel: #121a33;
+  --panel-2: #1c2747;
+  --edge: #3a4674;
+  --ink: #eef1fb;
+  --muted: #96a4cf;
 
-  --mana: #d9a441;
-  --mana-bright: #f0c46a;
-  --xp: #ffd23f;
-  --hp: #d9694f;
-  --heal: #6fae7f;
+  --mana: #6c5cff;
+  --mana-bright: #a99dff;
+  --xp: #caf95f;
+  --hp: #ff6b8a;
+  --heal: #45e0a4;
 
-  --on-accent: #1f1913;
+  --on-accent: #0a0f22;
 
-  --app-bg: var(--void);
+  --app-bg:
+    radial-gradient(900px 520px at 50% -10%, #17224a 0%, transparent 60%),
+    radial-gradient(700px 420px at 92% 4%, #1a1540 0%, transparent 55%),
+    var(--void);
+  --grid-line: color-mix(in srgb, var(--edge) 22%, transparent);
 }
 
 /* ---------- token → utility mapping ---------- */
@@ -126,7 +84,7 @@
   --color-heal: var(--heal);
   --color-on-accent: var(--on-accent);
 
-  /* shadcn-compatible aliases so components from 8bitcn / shadcn registries paste in cleanly */
+  /* shadcn / 8bitcn-compatible aliases */
   --color-background: var(--void);
   --color-foreground: var(--ink);
   --color-card: var(--panel);
@@ -144,12 +102,14 @@
   --color-destructive-foreground: #ffffff;
   --color-border: var(--edge);
   --color-input: var(--edge);
-  --color-ring: var(--mana-bright);
+  --color-ring: var(--mana);
 
-  --radius-sm: calc(var(--radius) - 4px);
-  --radius-md: calc(var(--radius) - 2px);
-  --radius-lg: var(--radius);
-  --radius-xl: calc(var(--radius) + 4px);
+  --radius-sm: 0px;
+  --radius-md: 0px;
+  --radius-lg: 0px;
+  --radius-xl: 0px;
+  --radius-2xl: 0px;
+  --radius-3xl: 0px;
 }
 
 /* ---------- base ---------- */
@@ -165,90 +125,126 @@ body {
   background: var(--app-bg);
   background-attachment: fixed;
   color: var(--ink);
-  font-family: var(--font-display);
-  -webkit-font-smoothing: antialiased;
-  transition:
-    background-color 0.2s ease,
-    color 0.2s ease;
+  font-family: var(--font-body);
+  font-size: 1.15rem;
+  line-height: 1.35;
+  -webkit-font-smoothing: none;
+  font-smooth: never;
+  image-rendering: pixelated;
 }
 
-/* Cartography display face — opt in on hero headings / map titles.
-   Inert in arcade skin, which forces its own pixel font below. */
+/* kill every rounded corner — arcade UI is hard-edged */
+* {
+  border-radius: 0 !important;
+}
+
+/* headings + buttons get the true arcade face; h3 stays on the readable body
+   face so dense screens don't turn into walls of Press Start 2P */
+h1,
+h2,
+button,
+.arcade-face {
+  font-family: var(--font-display);
+  font-weight: 400;
+  letter-spacing: 0;
+  line-height: 1.7;
+  text-transform: none;
+}
+
+h1 {
+  font-size: clamp(1.1rem, 1rem + 1.6vw, 1.6rem);
+}
+h2 {
+  font-size: 0.95rem;
+}
+h3,
+h4 {
+  font-family: var(--font-body);
+  font-weight: 400;
+  font-size: 1.35rem;
+  line-height: 1.2;
+}
+
+/* .title-serif is used on hero <h1>s with a big Tailwind size class; tame it so
+   Press Start 2P doesn't overflow */
 .title-serif {
-  font-family: var(--font-serif);
-  font-weight: 600;
-  letter-spacing: -0.01em;
+  font-family: var(--font-display);
+  font-size: clamp(1rem, 0.9rem + 1.4vw, 1.4rem) !important;
+  line-height: 1.7;
+  letter-spacing: 0;
+}
+
+input,
+textarea,
+select {
+  font-family: var(--font-body);
+  font-size: 1rem;
 }
 
 ::-webkit-scrollbar {
   width: 10px;
   height: 10px;
 }
+::-webkit-scrollbar-track {
+  background: var(--void);
+}
 ::-webkit-scrollbar-thumb {
   background: var(--edge);
-  border-radius: 999px;
 }
 
-/* ---------- arcade skin: global pixel treatment ---------- */
-
-[data-skin='arcade'] * {
-  /* kill every rounded-* / radius; arcade UI is hard-edged */
-  border-radius: 0 !important;
-  -webkit-font-smoothing: none;
-  font-smooth: never;
+::selection {
+  background: var(--mana);
+  color: #fff;
 }
 
-[data-skin='arcade'] body {
-  font-size: 1.05rem;
-  image-rendering: pixelated;
+/* faint page grid — Codecademy-style hero texture, very subtle */
+.bg-grid {
+  background-image:
+    linear-gradient(var(--grid-line) 1px, transparent 1px),
+    linear-gradient(90deg, var(--grid-line) 1px, transparent 1px);
+  background-size: 28px 28px;
 }
 
-[data-skin='arcade'] .backdrop-blur,
-[data-skin='arcade'] [class*='backdrop-blur'] {
+/* ---------- pixel frames ---------- */
+
+.arcade-frame {
+  border-width: 2px !important;
+  border-style: solid !important;
+  border-color: var(--edge) !important;
+  box-shadow: 4px 4px 0 0 var(--edge) !important;
   -webkit-backdrop-filter: none !important;
   backdrop-filter: none !important;
 }
-
-/* headings, nav and buttons get the true arcade face */
-[data-skin='arcade'] h1,
-[data-skin='arcade'] h2,
-[data-skin='arcade'] h3,
-[data-skin='arcade'] button,
-[data-skin='arcade'] .arcade-face {
-  font-family: 'Press Start 2P', 'VT323', ui-monospace, monospace;
-  font-weight: 400 !important;
-  letter-spacing: 0;
-  line-height: 1.5;
+a:hover > .arcade-frame,
+button:hover > .arcade-frame,
+.arcade-frame.is-interactive:hover {
+  box-shadow: 2px 2px 0 0 var(--edge) !important;
+  transform: translate(1px, 1px);
 }
 
-[data-skin='arcade'] h1 {
-  font-size: 1.5rem;
-}
-[data-skin='arcade'] h2 {
-  font-size: 1.1rem;
-}
-
-/* chunky pixel frame for panels / buttons that opt in via marker classes */
-[data-skin='arcade'] .arcade-frame {
-  border-width: 3px !important;
-  border-color: var(--edge) !important;
-  box-shadow: 4px 4px 0 0 var(--edge) !important;
-  backdrop-filter: none !important;
-}
-
-[data-skin='arcade'] .arcade-btn {
-  border-width: 3px !important;
+.arcade-btn {
+  border-width: 2px !important;
+  border-style: solid !important;
   box-shadow: 3px 3px 0 0 var(--edge);
   text-transform: uppercase;
-  font-size: 0.7rem;
+  font-size: 0.62rem;
+  letter-spacing: 0.02em;
 }
-[data-skin='arcade'] .arcade-btn:active {
+.arcade-btn:active:not(:disabled) {
   transform: translate(3px, 3px);
   box-shadow: 0 0 0 0 var(--edge);
 }
 
-/* CRT scanlines */
-[data-skin='arcade'] body::after {
+/* neutralise leftover blur utilities */
+.backdrop-blur,
+[class*='backdrop-blur'] {
+  -webkit-backdrop-filter: none !important;
+  backdrop-filter: none !important;
+}
+
+/* ---------- CRT scanlines ---------- */
+
+body::after {
   content: '';
   position: fixed;
   inset: 0;
@@ -256,37 +252,38 @@ body {
   pointer-events: none;
   background: repeating-linear-gradient(
     to bottom,
-    rgba(0, 0, 0, 0.12) 0px,
-    rgba(0, 0, 0, 0.12) 1px,
+    rgba(0, 0, 0, 0.14) 0px,
+    rgba(0, 0, 0, 0.14) 1px,
     transparent 1px,
     transparent 3px
   );
   mix-blend-mode: multiply;
-  opacity: 0.5;
+  opacity: 0.3;
 }
-[data-skin='arcade'][data-theme='dark'] body::after {
+:root:where([data-theme='dark']) body::after {
   background: repeating-linear-gradient(
     to bottom,
-    rgba(255, 255, 255, 0.05) 0px,
-    rgba(255, 255, 255, 0.05) 1px,
+    rgba(120, 150, 255, 0.06) 0px,
+    rgba(120, 150, 255, 0.06) 1px,
     transparent 1px,
     transparent 3px
   );
   mix-blend-mode: screen;
+  opacity: 0.5;
 }
 
 @media (prefers-reduced-motion: no-preference) {
-  [data-skin='arcade'] body::after {
-    animation: arcade-flicker 6s steps(2) infinite;
+  body::after {
+    animation: arcade-flicker 7s steps(2) infinite;
   }
 }
 @keyframes arcade-flicker {
   0%,
-  97%,
+  96%,
   100% {
-    opacity: 0.5;
+    opacity: 0.4;
   }
   98% {
-    opacity: 0.35;
+    opacity: 0.24;
   }
 }

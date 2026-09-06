@@ -83,8 +83,8 @@ export function MissionCreate() {
         <ArrowLeft className="h-4 w-4" /> Study Missions
       </Link>
 
-      <h1 className="title-serif mb-1 text-3xl">New mission</h1>
-      <p className="mb-6 text-sm text-muted">
+      <h1 className="title-serif mb-2">New mission</h1>
+      <p className="mb-6 max-w-prose text-sm text-muted">
         Pick the subject and the exact topics your exam covers. A short
         diagnostic follows so the plan starts from where you actually are.
       </p>

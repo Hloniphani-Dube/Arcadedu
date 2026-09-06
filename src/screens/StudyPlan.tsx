@@ -32,7 +32,15 @@ import { ConfidenceBadge, MasteryBar, StrategyPill } from '../study/ui'
 import { SESSION_KIND_LABEL } from '../study/labels'
 import { AgentActivity } from '../study/AgentActivity'
 import { NotificationCard } from '../study/NotificationCard'
-import { Panel, Btn, Spinner } from '../components/ui'
+import {
+  Panel,
+  Btn,
+  Spinner,
+  SectionTitle,
+  Stat,
+  Chip,
+  EmptyState,
+} from '../components/ui'
 
 export function StudyPlan() {
   const { missionId } = useParams()
@@ -73,18 +81,14 @@ export function StudyPlan() {
 
   if (error) {
     return (
-      <div className="mx-auto max-w-3xl">
-        <Panel className="border-hp/40 p-5 text-sm text-hp">{error}</Panel>
-      </div>
+      <Panel className="border-hp/40 p-5 text-sm text-hp">{error}</Panel>
     )
   }
   if (!snap) {
     return (
-      <div className="mx-auto max-w-3xl">
-        <Panel className="p-5">
-          <Spinner label="Loading the plan…" />
-        </Panel>
-      </div>
+      <Panel className="p-5">
+        <Spinner label="Loading the plan…" />
+      </Panel>
     )
   }
 
@@ -149,17 +153,17 @@ export function StudyPlan() {
   }
 
   return (
-    <div className="mx-auto max-w-3xl">
+    <div>
       <Link
         to="/missions"
-        className="mb-4 inline-flex items-center gap-1.5 text-sm text-muted hover:text-ink"
+        className="mb-3 inline-flex items-center gap-1.5 text-sm text-muted hover:text-ink"
       >
         <ArrowLeft className="h-4 w-4" /> Study Missions
       </Link>
 
-      <header className="mb-6">
+      <header className="bg-grid -mx-4 mb-6 border-b border-edge px-4 pb-6 pt-2 md:-mx-8 md:px-8">
         <div className="flex flex-wrap items-center gap-3">
-          <h1 className="title-serif text-3xl">{mission.title}</h1>
+          <h1 className="title-serif">{mission.title}</h1>
           {diagnosed && <ConfidenceBadge confidence={conf.confidence} />}
         </div>
         <div className="mt-2 flex items-center gap-1.5 text-sm text-muted">
@@ -183,51 +187,58 @@ export function StudyPlan() {
       )}
 
       {!diagnosed && (
-        <Panel className="mb-6 flex flex-col items-start gap-3 p-5">
-          <span className="grid h-10 w-10 place-items-center rounded-xl border border-edge bg-panel-2 text-mana-bright">
-            <Stethoscope className="h-5 w-5" />
-          </span>
-          <div className="font-bold">Run the diagnostic</div>
-          <p className="text-sm text-muted">
-            The plan needs a starting point. Answer two quick questions per topic
-            and the agent will draft your schedule.
-          </p>
-          <Link to={`/missions/${mission.id}/diagnostic`}>
-            <Btn variant="primary">Start diagnostic</Btn>
-          </Link>
-        </Panel>
+        <EmptyState
+          icon={<Stethoscope className="h-5 w-5" />}
+          title="Run the diagnostic"
+          action={
+            <Link to={`/missions/${mission.id}/diagnostic`}>
+              <Btn variant="primary">Start diagnostic</Btn>
+            </Link>
+          }
+        >
+          The plan needs a starting point. Answer two quick questions per topic
+          and the agent will draft your schedule.
+        </EmptyState>
       )}
 
       {diagnosed && (
         <>
-          <Panel className="mb-6 grid grid-cols-3 gap-4 p-5 text-center">
+          <Panel className="mb-6 grid grid-cols-3 gap-4 p-5">
             <Stat label="Days remaining" value={conf.days_remaining} />
-            <Stat label="Sessions needed" value={conf.required_sessions} />
-            <Stat label="Sessions available" value={conf.available_sessions} />
+            <Stat
+              label="Sessions needed"
+              value={conf.required_sessions}
+              tone="mana"
+            />
+            <Stat
+              label="Sessions available"
+              value={conf.available_sessions}
+              tone="heal"
+            />
           </Panel>
 
-          <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
-            <h2 className="text-sm font-bold uppercase tracking-wide text-muted">
-              Topics
-            </h2>
-            <div className="flex gap-2">
-              <Btn onClick={replanNow} disabled={agentBusy || busy}>
-                <span className="flex items-center gap-1.5">
-                  <Sparkles className="h-4 w-4 opacity-70" />
+          <SectionTitle
+            actions={
+              <>
+                <Btn
+                  variant="accent"
+                  size="sm"
+                  onClick={replanNow}
+                  disabled={agentBusy || busy}
+                >
+                  <Sparkles className="h-3.5 w-3.5" />
                   {agentBusy ? 'Agent working…' : 'Re-plan now'}
-                </span>
-              </Btn>
-              <Btn onClick={rebuild} disabled={busy || agentBusy}>
-                <span className="flex items-center gap-1.5">
-                  <RefreshCw className="h-4 w-4 opacity-70" />
-                  {busy ? 'Rebuilding…' : 'Rebuild plan'}
-                </span>
-              </Btn>
-            </div>
-          </div>
-          {agentMsg && (
-            <p className="mb-4 text-xs text-muted">{agentMsg}</p>
-          )}
+                </Btn>
+                <Btn size="sm" onClick={rebuild} disabled={busy || agentBusy}>
+                  <RefreshCw className="h-3.5 w-3.5" />
+                  {busy ? 'Rebuilding…' : 'Rebuild'}
+                </Btn>
+              </>
+            }
+          >
+            Topics
+          </SectionTitle>
+          {agentMsg && <p className="-mt-1 mb-4 text-xs text-muted">{agentMsg}</p>}
 
           <div className="mb-8 grid gap-3 sm:grid-cols-2">
             {topics.map((mt) => {
@@ -237,9 +248,7 @@ export function StudyPlan() {
               return (
                 <Panel key={mt.id} className="flex flex-col gap-3 p-4">
                   <div className="flex items-center justify-between gap-2">
-                    <span className="font-bold">
-                      {topic?.name ?? mt.topic_id}
-                    </span>
+                    <span className="font-bold">{topic?.name ?? mt.topic_id}</span>
                     {tm && <StrategyPill level={tm.strategy_level} />}
                   </div>
                   <MasteryBar value={tm?.mastery_score ?? 0} />
@@ -262,21 +271,24 @@ export function StudyPlan() {
             })}
           </div>
 
-          <div className="mb-4 flex items-center justify-between">
-            <h2 className="text-sm font-bold uppercase tracking-wide text-muted">
-              Schedule
-            </h2>
-            {nextSession && (
-              <Link to={`/missions/${mission.id}/s/${nextSession.id}`}>
-                <Btn variant="primary">Practice next</Btn>
-              </Link>
-            )}
-          </div>
+          <SectionTitle
+            actions={
+              nextSession && (
+                <Link to={`/missions/${mission.id}/s/${nextSession.id}`}>
+                  <Btn variant="primary" size="sm">
+                    Practice next
+                  </Btn>
+                </Link>
+              )
+            }
+          >
+            Schedule
+          </SectionTitle>
 
           <div className="flex flex-col gap-2">
             {sessions.length === 0 && (
               <Panel className="p-4 text-sm text-muted">
-                No sessions scheduled. Use “Rebuild plan”.
+                No sessions scheduled. Use “Rebuild”.
               </Panel>
             )}
             {sessions.map((s, i) => (
@@ -295,20 +307,11 @@ export function StudyPlan() {
             ))}
           </div>
 
-          <div className="mt-8">
+          <div className="mt-10">
             <AgentActivity missionId={mission.id} refreshKey={activityKey} />
           </div>
         </>
       )}
-    </div>
-  )
-}
-
-function Stat({ label, value }: { label: string; value: number }) {
-  return (
-    <div>
-      <div className="text-2xl font-black text-ink">{value}</div>
-      <div className="mt-0.5 text-xs text-muted">{label}</div>
     </div>
   )
 }
@@ -344,17 +347,14 @@ function SessionRow({
 
   const body = (
     <Panel
-      className={`flex items-center gap-3 p-3 ${
-        session.status === 'pending' ? 'transition hover:border-mana' : 'opacity-80'
-      }`}
+      interactive={session.status === 'pending'}
+      className={`flex items-center gap-3 p-3 ${session.status === 'pending' ? '' : 'opacity-75'}`}
     >
       {icon}
       <div className="min-w-0 flex-1">
         <div className="flex items-center gap-2 text-sm font-semibold">
           {topic?.name ?? session.topic_id}
-          <span className="rounded-md border border-edge px-1.5 py-0.5 text-[10px] uppercase tracking-wide text-muted">
-            {SESSION_KIND_LABEL[session.kind]}
-          </span>
+          <Chip>{SESSION_KIND_LABEL[session.kind]}</Chip>
         </div>
         <div className="mt-0.5 text-xs text-muted">
           {session.scheduled_date} · {when} · {session.item_count} items

@@ -564,9 +564,12 @@ surfaces when there's a real decision."* These three pieces make that concrete.
 
 ### Academic Calendar — [Calendar.tsx](src/screens/Calendar.tsx) · `/calendar`
 
-Add fixed academic dates (exam, assignment, quiz, deadline, lecture) and
-**recurring routines** (a weekly problem set, a bi-weekly lab report). These are
-not decoration:
+A month grid ([MonthCalendar.tsx](src/study/MonthCalendar.tsx)) with chips on the
+day — academic dates **and** upcoming study sessions — plus prev/next/Today
+navigation. Click a day for its agenda and a quick "add on this date". Below it,
+**recurring routines** (a weekly problem set, a bi-weekly lab report). A compact
+read-only copy of the same grid sits at the top of the [Inbox](src/screens/Inbox.tsx).
+These are not decoration:
 
 - `buildAgentContext` feeds every upcoming `calendar_event` into the agent's
   context (`calendar[]`), and `deadlineCrossings` flags any event sitting exactly
@@ -602,7 +605,7 @@ occurrences`, polled every 60 s.
 | Route | Screen | What it does |
 | --- | --- | --- |
 | `/inbox` | [Inbox](src/screens/Inbox.tsx) | Digest + "Needs you" (decisions) + "On your plate" (computed reminders). The one place the agent surfaces. |
-| `/calendar` | [Calendar](src/screens/Calendar.tsx) | Add/complete/delete academic dates; add/pause/delete recurring routines. |
+| `/calendar` | [Calendar](src/screens/Calendar.tsx) | Month grid of dates + study sessions; click a day for its agenda + quick-add; recurring-routine management. |
 | `/missions` | [MissionsHome](src/screens/MissionsHome.tsx) | List missions; "New mission" CTA; sign-in notice in local mode. |
 | `/missions/new` | [MissionCreate](src/screens/MissionCreate.tsx) | Subject select → Atlas topic checkboxes → exam date (min today) → sessions/week → minutes/session → `createMission` → diagnostic. |
 | `/missions/:id/diagnostic` | [MissionDiagnostic](src/screens/MissionDiagnostic.tsx) | `2` AI questions per topic, student answers, AI grades → `seedDiagnosticAndPlan` (deterministic `seedMastery` + `generatePlan`) → Study Plan. |
@@ -773,6 +776,7 @@ src/
     db.ts                   mission + calendar + routine Supabase IO (browser)
     agent.ts                frontend runAgentTick()
     useInboxCount.ts        sidebar-badge hook
+    MonthCalendar.tsx       reusable month grid (full on /calendar, compact in the Inbox)
     ui.tsx labels.ts        Study Mission presentational bits
     AgentActivity.tsx NotificationCard.tsx
     agent/
@@ -915,6 +919,20 @@ Pre-existing lint errors in [src/components/icons.tsx](src/components/icons.tsx)
 | `npm run preview` | Serve the production build. |
 
 ---
+
+# Look & feel
+
+Arcade-only, Codecademy-inspired: a deep-navy ground, **indigo** primary
+(`--mana`), **chartreuse** highlight (`--xp`), pink danger, mint success. Press
+Start 2P for headings and buttons, VT323 for body; every corner squared, chunky
+2px pixel frames with an offset shadow, faint animated CRT scanlines. One theme
+axis only — `data-theme` `light` | `dark` on `<html>` (`system` resolved live);
+`data-skin` is always `arcade` and there is no skin toggle. All colour is CSS
+variables in [src/index.css](src/index.css) mapped to Tailwind utilities
+(`bg-void`, `text-mana`, `border-edge`, …). Shared primitives —
+`Panel` · `Btn` · `Bar` · `PageHeader` · `SectionTitle` · `Chip` · `Stat` ·
+`EmptyState` — live in [src/components/ui.tsx](src/components/ui.tsx); the
+persistent left rail is [src/components/AppShell.tsx](src/components/AppShell.tsx).
 
 # Stack
 

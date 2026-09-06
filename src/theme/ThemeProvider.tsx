@@ -3,18 +3,17 @@ import type { ReactNode } from 'react'
 import { resolveMode, useTheme } from './theme-store'
 
 /**
- * Applies the current theme to <html> as data-attributes:
- *   data-skin  = "normal" | "arcade"
- *   data-theme = "light"  | "dark"   (system is resolved live)
- * All colour/skin CSS in index.css keys off these, so no context plumbing is needed.
+ * Applies the theme to <html> as data-attributes:
+ *   data-skin  = "arcade"   (always — Arcadedu is arcade-only)
+ *   data-theme = "light" | "dark"   ("system" is resolved live)
+ * All colour/skin CSS in index.css keys off these.
  */
 export function ThemeProvider({ children }: { children: ReactNode }) {
-  const skin = useTheme((s) => s.skin)
   const mode = useTheme((s) => s.mode)
 
   useEffect(() => {
     const root = document.documentElement
-    root.dataset.skin = skin
+    root.dataset.skin = 'arcade'
 
     const apply = () => {
       root.dataset.theme = resolveMode(mode)
@@ -25,7 +24,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     const mq = window.matchMedia('(prefers-color-scheme: dark)')
     mq.addEventListener('change', apply)
     return () => mq.removeEventListener('change', apply)
-  }, [skin, mode])
+  }, [mode])
 
   return <>{children}</>
 }
