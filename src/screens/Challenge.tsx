@@ -11,7 +11,14 @@ import {
   AiError,
 } from '../lib/ai'
 import type { GradedAnswer } from '../lib/types'
-import { xpReward, isCrit } from '../game/engine'
+import {
+  xpReward,
+  isCrit,
+  playerDamage,
+  enemyDamage,
+  PLAYER_MAX_HP,
+  ENEMY_MAX_HP,
+} from '../game/engine'
 import { getSubject, getTopic, getNode } from '../game/atlas'
 import {
   useApp,
@@ -19,10 +26,11 @@ import {
   selectNodeUnlocked,
   selectSubjectProgress,
 } from '../store'
+import { useSettings } from '../settings/settings-store'
 import { AriaSpeech, type AriaLine } from '../components/AriaSpeech'
 import { QuestionCard } from '../components/QuestionCard'
 import { EnemyPortrait } from '../components/EnemyPortrait'
-import { Btn, Panel, Spinner } from '../components/ui'
+import { Btn, Panel, Spinner, Bar } from '../components/ui'
 
 const BOSS_TRIALS = ['solve', 'twist', 'explain'] as const
 type Phase = 'loading' | 'answering' | 'result' | 'complete'
@@ -43,8 +51,11 @@ export function Challenge() {
   const topic = getTopic(subjectId, topicId)
   const node = getNode(subjectId, topicId, nodeId)
   const isBoss = node?.kind === 'boss'
+  const showRpgHud = useSettings((s) => s.showRpgHud)
 
   const [phase, setPhase] = useState<Phase>('loading')
+  const [playerHp, setPlayerHp] = useState(PLAYER_MAX_HP)
+  const [enemyHp, setEnemyHp] = useState(() => ENEMY_MAX_HP[isBoss ? 'boss' : (node?.tier ?? 'trivial')])
   const [trial, setTrial] = useState(0)
   const [pendingTrial, setPendingTrial] = useState(0)
   const [narrative, setNarrative] = useState('')
@@ -129,6 +140,12 @@ export function Challenge() {
       setGrade(g)
       pushLine(g.correct ? 'Result' : 'Not quite', g.feedback)
 
+      const tierForDmg = isBoss ? 'boss' : node.tier
+      const dmgToEnemy = playerDamage(tierForDmg, g)
+      const dmgToPlayer = enemyDamage(tierForDmg, g)
+      if (dmgToEnemy) setEnemyHp((hp) => Math.max(0, hp - dmgToEnemy))
+      if (dmgToPlayer) setPlayerHp((hp) => Math.max(0, hp - dmgToPlayer))
+
       const passed = g.correct && g.quality >= (isBoss ? 0.5 : 0.4)
       if (!passed) {
         setPendingTrial(trial) // retry same trial / regenerate
@@ -151,6 +168,7 @@ export function Challenge() {
       // whole node cleared
       addXp(gained)
       setXpGained((x) => x + gained)
+      setEnemyHp(0)
       completeNode(subject.id, topic.id, node.id)
       if (selectSubjectProgress(useApp.getState(), subject.id) >= 1) {
         recordClear(subject.id)
@@ -211,6 +229,17 @@ export function Challenge() {
               )}
             </span>
           </div>
+          {showRpgHud && (
+            <div className="mt-3 grid grid-cols-2 gap-3">
+              <Bar value={playerHp} max={PLAYER_MAX_HP} tone="heal" label="You" />
+              <Bar
+                value={enemyHp}
+                max={ENEMY_MAX_HP[isBoss ? 'boss' : node.tier]}
+                tone="hp"
+                label="Enemy"
+              />
+            </div>
+          )}
           <EnemyPortrait tier={node.tier} seed={node.id} className="mx-auto mb-3 mt-3 h-24 w-24" />
           <h1 className="mt-1 text-lg font-bold">{node.title}</h1>
 

@@ -11,7 +11,7 @@ export function EnemyPortrait({
   seed: string
   className?: string
 }) {
-  const show = useSettings((s) => s.showEnemyArt)
+  const show = useSettings((s) => s.showRpgHud)
   if (!show) return null
 
   return (

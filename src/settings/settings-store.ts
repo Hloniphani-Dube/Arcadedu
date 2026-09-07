@@ -2,16 +2,16 @@ import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 
 interface SettingsState {
-  /** Show pixel-art enemy portraits during battles. */
-  showEnemyArt: boolean
-  setShowEnemyArt: (show: boolean) => void
+  /** Enemy portraits + HP bars during battles. Off = text-only battles. */
+  showRpgHud: boolean
+  setShowRpgHud: (show: boolean) => void
 }
 
 export const useSettings = create<SettingsState>()(
   persist(
     (set) => ({
-      showEnemyArt: true,
-      setShowEnemyArt: (show) => set({ showEnemyArt: show }),
+      showRpgHud: true,
+      setShowRpgHud: (show) => set({ showRpgHud: show }),
     }),
     { name: 'arcadedu.settings.v1' },
   ),

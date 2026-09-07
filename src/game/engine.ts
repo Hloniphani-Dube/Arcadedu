@@ -74,6 +74,16 @@ export function isCrit(tier: EnemyTier, graded: GradedAnswer): boolean {
 
 export const PLAYER_MAX_HP = 100
 
+/** Boss depletes across its 3 trials; regular nodes are one decisive hit,
+ *  snapped to 0 on victory — this just gives that hit visual weight. */
+export const ENEMY_MAX_HP: Record<EnemyTier, number> = {
+  trivial: 40,
+  easy: 60,
+  medium: 80,
+  hard: 100,
+  boss: 120,
+}
+
 export type SkillRank = 'Locked' | 'Novice' | 'Developing' | 'Skilled' | 'Mastered'
 
 export function skillRank(clears: number): SkillRank {

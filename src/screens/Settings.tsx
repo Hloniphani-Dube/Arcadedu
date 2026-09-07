@@ -20,13 +20,13 @@ function Switch({
       aria-checked={checked}
       aria-label={label}
       onClick={() => onChange(!checked)}
-      className={`arcade-frame relative h-6 w-11 flex-shrink-0 border border-edge transition-colors ${
+      className={`relative h-6 w-11 flex-shrink-0 border border-edge transition-colors ${
         checked ? 'bg-mana' : 'bg-panel-2'
       }`}
     >
       <span
-        className={`absolute top-0.5 h-4 w-4 border border-edge bg-panel transition-transform ${
-          checked ? 'translate-x-[22px]' : 'translate-x-0.5'
+        className={`absolute top-0.5 h-4 w-4 border border-edge transition-transform ${
+          checked ? 'translate-x-[22px] bg-on-accent' : 'translate-x-0.5 bg-panel'
         }`}
       />
     </button>
@@ -34,8 +34,8 @@ function Switch({
 }
 
 export function Settings() {
-  const showEnemyArt = useSettings((s) => s.showEnemyArt)
-  const setShowEnemyArt = useSettings((s) => s.setShowEnemyArt)
+  const showRpgHud = useSettings((s) => s.showRpgHud)
+  const setShowRpgHud = useSettings((s) => s.setShowRpgHud)
 
   return (
     <div>
@@ -60,16 +60,23 @@ export function Settings() {
             <Swords className="h-4 w-4" />
           </span>
           <div className="min-w-0 flex-1">
-            <div className="text-sm font-semibold">Enemy characters</div>
+            <div className="text-sm font-semibold">RPG environment</div>
             <div className="text-xs text-muted">
-              Show pixel-art enemy portraits during battles.
+              Show enemy portraits and HP bars during battles.
             </div>
           </div>
-          <Switch
-            checked={showEnemyArt}
-            onChange={setShowEnemyArt}
-            label="Show enemy characters"
-          />
+          <div className="flex items-center gap-2">
+            <span
+              className={`text-xs font-semibold uppercase tracking-wide ${showRpgHud ? 'text-mana-bright' : 'text-muted'}`}
+            >
+              {showRpgHud ? 'On' : 'Off'}
+            </span>
+            <Switch
+              checked={showRpgHud}
+              onChange={setShowRpgHud}
+              label="Show RPG environment"
+            />
+          </div>
         </div>
       </Panel>
     </div>
