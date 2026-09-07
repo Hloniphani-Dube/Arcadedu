@@ -158,6 +158,42 @@ export interface RoutineOccurrence {
   created_at: string
 }
 
+export type MissionArtifactKind =
+  | 'session_items'
+  | 'revision_sheet'
+  | 'progress_report'
+  | 'message_draft'
+  | 'weekly_brief'
+
+export type MissionArtifactStatus = 'preparing' | 'ready' | 'draft' | 'archived'
+
+export interface PreparedItem {
+  narrative: string
+  question: string
+  expectedConcept: string
+  difficulty: string
+}
+
+export interface MissionArtifact {
+  id: string
+  mission_id: string
+  topic_id: string | null
+  plan_session_id: string | null
+  kind: MissionArtifactKind
+  title: string
+  /** shape depends on kind: {text} | {items: PreparedItem[]} | {subject, body} */
+  content: {
+    text?: string
+    items?: PreparedItem[]
+    subject?: string
+    body?: string
+  }
+  status: MissionArtifactStatus
+  created_by: 'agent' | 'you'
+  created_at: string
+  updated_at: string
+}
+
 /** A single "on your plate" item, computed live from sessions + events + routines. */
 export interface Reminder {
   id: string

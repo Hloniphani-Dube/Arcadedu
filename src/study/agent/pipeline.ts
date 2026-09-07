@@ -26,6 +26,12 @@ export type DecideFn = (
   trigger: string,
 ) => Promise<unknown>
 
+/** Proxy to the closed-action learning AI (/api/ai), for producer ops. */
+export type CallAiFn = (
+  action: string,
+  ctx: Record<string, unknown>,
+) => Promise<unknown>
+
 export type TickStatus =
   | 'ok'
   | 'idempotent'
@@ -55,6 +61,8 @@ export interface RunTickArgs {
   trigger: 'SESSION_COMPLETED' | 'DAILY' | 'MANUAL'
   triggerId: string
   decide: DecideFn
+  /** proxy to /api/ai for producer ops; if omitted those ops are skipped */
+  callAi?: CallAiFn
   now?: Date
 }
 
@@ -107,6 +115,19 @@ export function httpDecide(baseUrl: string, fetchImpl: typeof fetch = fetch): De
     if (!r.ok) throw new Error(`decide ${r.status}: ${(await r.text()).slice(0, 200)}`)
     const j = (await r.json()) as { decision?: unknown }
     return j.decision
+  }
+}
+
+/** A CallAiFn that hits the closed-action /api/ai endpoint. */
+export function httpCallAi(baseUrl: string, fetchImpl: typeof fetch = fetch): CallAiFn {
+  return async (action, ctx) => {
+    const r = await fetchImpl(`${baseUrl}/api/ai`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ action, context: ctx }),
+    })
+    if (!r.ok) throw new Error(`ai ${action} ${r.status}`)
+    return r.json()
   }
 }
 
@@ -182,6 +203,7 @@ export async function runTick(args: RunTickArgs): Promise<TickOutcome> {
   const context = buildAgentContext({
     snapshot,
     level: 1,
+    subjectName: getSubject(snapshot.mission.subject_id)?.name,
     topicName: (id) =>
       getTopic(snapshot.mission.subject_id, id)?.name ??
       getSubject(snapshot.mission.subject_id)?.name ??
@@ -239,7 +261,13 @@ export async function runTick(args: RunTickArgs): Promise<TickOutcome> {
   let appliedChanges: AppliedChange[] = []
   if (verdict.approved && verdict.changes.length) {
     try {
-      appliedChanges = await applyChanges(db, missionId, verdict.changes, context)
+      appliedChanges = await applyChanges(
+        db,
+        missionId,
+        verdict.changes,
+        context,
+        args.callAi,
+      )
     } catch (err) {
       const msg = `apply failed: ${err instanceof Error ? err.message : 'db error'}`
       await finalize({

@@ -5,7 +5,7 @@
 // idempotency and notification limits all live in ../../src/study/agent/pipeline.
 
 import { createClient } from '@supabase/supabase-js'
-import { httpDecide, runTick } from '../../src/study/agent/pipeline'
+import { httpCallAi, httpDecide, runTick } from '../../src/study/agent/pipeline'
 
 export const config = { maxDuration: 60 }
 
@@ -93,6 +93,7 @@ export default async function handler(req: VercelReq, res: VercelRes) {
     trigger: trigger as 'SESSION_COMPLETED' | 'MANUAL',
     triggerId,
     decide: httpDecide(baseUrl(req)),
+    callAi: httpCallAi(baseUrl(req)),
     now,
   })
 

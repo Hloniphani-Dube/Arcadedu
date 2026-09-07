@@ -638,22 +638,38 @@ It does **not** fork the question-answering system:
 
 ---
 
+# The agent does the work, not you
+
+The learning is yours; everything *around* it is the agent's. What used to be
+your clicks and forms is now the agent's job:
+
+| Was your work | Now the agent's | How |
+| --- | --- | --- |
+| Fill a 6-field form, hand-pick topics, type every exam date into the calendar | **Syllabus intake** — paste a syllabus / brief / topic list | [MissionCreate](src/screens/MissionCreate.tsx) → `createMissionFromSyllabus` → `/api/ai` `map_syllabus` maps the text onto Atlas topic ids, infers cadence + target, and writes the mission, `mission_topics` and every dated item into `calendar_events`. `syllabus_source = 'freetext'`. |
+| Sit and wait while each practice item generates | **Session prep** — `prepare_session` | On Study Plan load (and on the agent's tick) the next pending session's 4 items are generated ahead and cached as a `session_items` artifact. [MissionSession](src/screens/MissionSession.tsx) loads them instantly (`Prepped` chip); falls back to live generation if absent. |
+| Make your own revision notes | **Revision sheets** — `write_revision_sheet` | `/api/ai` writes a one-page KEY IDEAS / FORMULAS / COMMON MISTAKES / WORKED EXAMPLE sheet per topic. Button on each Study Plan topic card, or the agent does it for a weak/flat topic (max 2/tick). |
+| Write a "here's where I am" update; write an email asking for an extension | **Draft-and-approve** — `write_progress_report` / `draft_message` | The agent drafts from *facts only* — never a fabricated reason. Lands as a `draft` artifact with a **Copy** button and **Looks good**. Nothing sends. The agent may draft an extension request only when the plan is `OFF_TRACK` or a deadline is ≤3 days away. |
+| Track what the agent changed | **Weekly brief** | `weeklyFacts()` composes "what the agent did lately" from the last 7 days of applied `agent_events` + `session_log` — shown on the Study Plan. |
+
+All of this is produced into **`mission_artifacts`** ([0004](supabase/migrations/0004_mission_artifacts.sql)) via the same deterministic gate, and surfaced by [ArtifactCard](src/study/ArtifactCard.tsx). None of it touches the student's coursework.
+
 # How AI is used, end to end
 
 Two model surfaces, each tightly boxed:
 
 | Surface | Model | Used for | Can it write to the DB? |
 | --- | --- | --- | --- |
-| [`/api/ai`](api/ai.ts) | Gemini (`GEMINI_MODEL`, fallback `GEMINI_FALLBACK_MODEL`) | Generating and grading challenges: game Challenge nodes, boss trials, Story puzzles, Study Hall help, the mission **diagnostic**, mission **session** items, and `STRUGGLING`/`PERSISTENT` **scaffolding**. Returns prose or structured `{ correct, quality, feedback }`. | **No.** It returns text/JSON to the caller. |
-| [`/api/agent/decide.py`](api/agent/decide.py) | Bedrock (`BEDROCK_MODEL_ID`, Claude) via the Strands Agents SDK | **Planning decisions only**: interpret the mission's deterministic state and propose plan changes as one closed-contract JSON. | **No.** No Supabase client; read-only tools; output is validated by the gate before any write. |
+| [`/api/ai`](api/ai.ts) | Gemini (`GEMINI_MODEL`, fallback `GEMINI_FALLBACK_MODEL`) | Generating and grading challenges (game nodes, boss trials, Story puzzles, Study Hall help, mission **diagnostic** + **session** items + **scaffolding**), and the agent's **producer** actions: `map_syllabus`, `write_revision_sheet`, `write_progress_report`, `draft_message` — extract / assemble / phrase, never solve. Returns prose or structured JSON. | **No.** It returns text/JSON to the caller. |
+| [`/api/agent/decide.py`](api/agent/decide.py) | Bedrock (`BEDROCK_MODEL_ID`, Claude) via the Strands Agents SDK | **Decisions**: interpret the mission's deterministic state and propose plan changes + producer ops as one closed-contract JSON. | **No.** No Supabase client; read-only tools; output is validated by the gate, which then calls `/api/ai` and writes the artifacts. |
 
 Hard boundaries that hold for both:
 
 - No free-text prompt channel from the browser. `/api/ai` takes a closed `action`
   + structured `context`; the agent is invoked with a fixed snapshot.
-- No `solve_this`. The agent's ops are `set_strategy` / `set_priority` /
-  `insert_session` / `drop_session` / `move_session` / `replan` — schedule and
-  scaffolding, never answers.
+- No `solve_this`. The agent's ops are schedule + admin only —
+  `set_strategy` / `set_priority` / `insert_session` / `drop_session` /
+  `move_session` / `replan` / `prepare_session` / `write_revision_sheet` /
+  `draft_message`. Never an answer.
 - No model writes XP, mastery, or a schedule directly. `src/game/engine.ts` and
   `src/study/` own every number; the gate owns every mutation.
 - Keys stay server-side: `GEMINI_API_KEY` in `/api/ai` only; `AWS_*` in
@@ -674,6 +690,7 @@ in-memory progress, Study Missions disabled with a notice.
 | [0001_init_progress.sql](supabase/migrations/0001_init_progress.sql) | `profiles` (+ new-user trigger), `subject_progress`, `topic_progress` — the game's per-user progress. |
 | [0002_study_missions.sql](supabase/migrations/0002_study_missions.sql) | `study_missions`, `mission_topics`, `topic_mastery`, `plan_sessions`, `session_log`, `agent_events`, `notifications` — the Study Agent. |
 | [0003_calendar_routines.sql](supabase/migrations/0003_calendar_routines.sql) | `calendar_events`, `routines`, `routine_occurrences` — the academic calendar + recurring routines. |
+| [0004_mission_artifacts.sql](supabase/migrations/0004_mission_artifacts.sql) | `mission_artifacts` — things the agent produces for the student (prepped sessions, revision sheets, reports, message drafts). |
 
 Every table has RLS. Game progress and `study_missions` / `notifications` scope
 on `auth.uid() = user_id`; the five mission child tables scope through the

@@ -66,6 +66,16 @@ Decision guide:
 - The plan cannot reach the target without more time/lower target: FLAG_FOR_HUMAN
   with notify=true and no invented sessions.
 
+Producer ops — do the admin work FOR the student (never the learning):
+- {"op":"prepare_session","session_id":"<uuid>"} — pre-build the next session's
+  practice items so the student doesn't wait. Do this for the soonest pending
+  session when it has no items yet.
+- {"op":"write_revision_sheet","topic":"<id>"} — a one-page revision sheet for a
+  weak or flat topic. At most 2 per tick.
+- {"op":"draft_message","kind":"extension_request|tutor_update"} — a draft the
+  student will review and send. ONLY when the plan is OFF_TRACK or a deadline is
+  within 3 days. At most 1.
+
 Allowed change operations (JSON objects in `changes`):
 - {"op":"set_strategy","topic":"<id>","level":"NORMAL|STRUGGLING|PERSISTENT"}
 - {"op":"set_priority","topic":"<id>","priority":<int>}
@@ -73,6 +83,9 @@ Allowed change operations (JSON objects in `changes`):
 - {"op":"drop_session","topic":"<id>"}  or  {"op":"drop_session","session_id":"<uuid>"}
 - {"op":"move_session","session_id":"<uuid>","to_date":"YYYY-MM-DD"}
 - {"op":"replan"}
+- {"op":"prepare_session","session_id":"<uuid>"}
+- {"op":"write_revision_sheet","topic":"<id>"}
+- {"op":"draft_message","kind":"extension_request|tutor_update"}
 
 Keep `observations` to 2-4 short factual bullets. Keep `reason` to one sentence.
 Use topic ids exactly as given by the tools.
@@ -101,12 +114,22 @@ class Change(BaseModel):
         "drop_session",
         "move_session",
         "replan",
+        "prepare_session",
+        "write_revision_sheet",
+        "draft_message",
     ]
     topic: Optional[str] = None
     level: Optional[Literal["NORMAL", "STRUGGLING", "PERSISTENT"]] = None
     priority: Optional[int] = None
     kind: Optional[
-        Literal["practice", "diagnostic", "prerequisite_review", "revision"]
+        Literal[
+            "practice",
+            "diagnostic",
+            "prerequisite_review",
+            "revision",
+            "extension_request",
+            "tutor_update",
+        ]
     ] = None
     before: Optional[str] = None
     session_id: Optional[str] = None

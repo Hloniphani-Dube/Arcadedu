@@ -4,13 +4,23 @@
 
 import { supabase } from '../lib/supabase'
 import {
+  draftMessage,
+  generateEnemyQuestion,
+  mapSyllabus,
+  writeProgressReport,
+  writeRevisionSheet,
+} from '../lib/ai'
+import type { AiRequestContext } from '../lib/types'
+import {
   applySession,
   rollQualityAvg,
   seedMastery,
 } from './mastery'
+import { calculatePlanConfidence } from './confidence'
 import { generatePlan, type PlanDraft } from './plan'
 import { routineOccurrenceDates } from './calendar'
-import { TARGET_MASTERY_DEFAULT } from './config'
+import { SESSION_ITEM_COUNT, TARGET_MASTERY_DEFAULT } from './config'
+import { difficultyForStrategy } from './strategy'
 import { addDays, toDayString } from './dates'
 import type {
   AgentEvent,
@@ -18,9 +28,13 @@ import type {
   CalendarEventKind,
   GradedItem,
   MasteryUpdate,
+  MissionArtifact,
+  MissionArtifactKind,
+  MissionArtifactStatus,
   MissionSnapshot,
   MissionTopic,
   PlanSession,
+  PreparedItem,
   Routine,
   RoutineCadence,
   RoutineOccurrence,
@@ -346,6 +360,381 @@ export async function archiveMission(missionId: string): Promise<void> {
     .from('study_missions')
     .update({ status: 'archived' })
     .eq('id', missionId)
+}
+
+// --- mission artifacts (things the agent produces FOR you) -----------------
+
+export async function fetchArtifacts(
+  missionId: string,
+  kind?: MissionArtifactKind,
+): Promise<MissionArtifact[]> {
+  if (!supabase) return []
+  let q = supabase
+    .from('mission_artifacts')
+    .select('*')
+    .eq('mission_id', missionId)
+    .neq('status', 'archived')
+    .order('created_at', { ascending: false })
+  if (kind) q = q.eq('kind', kind)
+  const { data, error } = await q
+  if (error) throw new StudyDbError(error.message)
+  return (data ?? []) as MissionArtifact[]
+}
+
+export interface ArtifactInput {
+  mission_id: string
+  kind: MissionArtifactKind
+  title: string
+  content: MissionArtifact['content']
+  topic_id?: string | null
+  plan_session_id?: string | null
+  status?: MissionArtifactStatus
+  created_by?: 'agent' | 'you'
+}
+
+export async function createArtifact(
+  input: ArtifactInput,
+): Promise<MissionArtifact> {
+  const db = requireDb()
+  const { data, error } = await db
+    .from('mission_artifacts')
+    .insert({
+      mission_id: input.mission_id,
+      kind: input.kind,
+      title: input.title,
+      content: input.content,
+      topic_id: input.topic_id ?? null,
+      plan_session_id: input.plan_session_id ?? null,
+      status: input.status ?? 'ready',
+      created_by: input.created_by ?? 'agent',
+    })
+    .select('*')
+    .single()
+  if (error || !data) throw new StudyDbError(error?.message ?? 'Could not save the artifact')
+  return data as MissionArtifact
+}
+
+export async function setArtifactStatus(
+  id: string,
+  status: MissionArtifactStatus,
+): Promise<void> {
+  const db = requireDb()
+  await db.from('mission_artifacts').update({ status }).eq('id', id)
+}
+
+// --- syllabus intake: the agent builds the whole mission ------------------
+
+export interface SyllabusIntakeInput {
+  user_id: string
+  syllabusText: string
+  subjectCatalog: NonNullable<AiRequestContext['subjectCatalog']>
+}
+
+export interface SyllabusIntakeResult {
+  missionId: string
+  title: string
+  topicCount: number
+  eventCount: number
+  unmapped: string[]
+}
+
+/** Paste a syllabus → the agent maps it and creates the mission, topics and
+ *  calendar dates. No form. */
+export async function createMissionFromSyllabus(
+  input: SyllabusIntakeInput,
+): Promise<SyllabusIntakeResult> {
+  const db = requireDb()
+  const today = toDayString(new Date())
+
+  const map = await mapSyllabus({
+    syllabusText: input.syllabusText,
+    subjectCatalog: input.subjectCatalog,
+    today,
+  })
+
+  const subject = input.subjectCatalog.find((s) => s.id === map.subject_id)
+  if (!subject) {
+    throw new StudyDbError(
+      "The agent couldn't match this to an Atlas subject — try naming the subject in the text.",
+    )
+  }
+  const validTopics = new Set(subject.topics.map((t) => t.id))
+  const topicIds = map.topic_ids.filter((t) => validTopics.has(t))
+  if (topicIds.length === 0) {
+    throw new StudyDbError(
+      "The agent couldn't match any topics — try listing the topics your exam covers.",
+    )
+  }
+
+  const examDate =
+    /^\d{4}-\d{2}-\d{2}$/.test(map.exam_date) && map.exam_date >= today
+      ? map.exam_date
+      : toDayString(addDays(today, 21))
+
+  const { data: mission, error } = await db
+    .from('study_missions')
+    .insert({
+      user_id: input.user_id,
+      subject_id: subject.id,
+      title: map.title || `${subject.name} Exam`,
+      exam_date: examDate,
+      sessions_per_week: clampInt(map.sessions_per_week, 2, 6, 4),
+      minutes_per_session: [20, 30, 45, 60].includes(map.minutes_per_session)
+        ? map.minutes_per_session
+        : 30,
+      syllabus_source: 'freetext',
+      status: 'active',
+    })
+    .select('id')
+    .single()
+  if (error || !mission) {
+    throw new StudyDbError(error?.message ?? 'Could not create the mission')
+  }
+  const missionId = mission.id as string
+
+  const target = clamp01(map.target_mastery) || TARGET_MASTERY_DEFAULT
+  await db.from('mission_topics').insert(
+    topicIds.map((topic_id, i) => ({
+      mission_id: missionId,
+      topic_id,
+      priority: topicIds.length - i,
+      target_mastery: target,
+    })),
+  )
+
+  // Every dated item the agent found → the calendar.
+  const events = [
+    ...map.events
+      .filter((e) => /^\d{4}-\d{2}-\d{2}$/.test(e.date))
+      .map((e) => ({
+        user_id: input.user_id,
+        mission_id: missionId,
+        title: e.title || 'Untitled',
+        kind: normalizeEventKind(e.kind),
+        event_date: e.date,
+      })),
+    {
+      user_id: input.user_id,
+      mission_id: missionId,
+      title: `${map.title || subject.name} — exam`,
+      kind: 'exam' as CalendarEventKind,
+      event_date: examDate,
+    },
+  ]
+  if (events.length) await db.from('calendar_events').insert(events)
+
+  return {
+    missionId,
+    title: map.title || subject.name,
+    topicCount: topicIds.length,
+    eventCount: events.length,
+    unmapped: map.unmapped,
+  }
+}
+
+function clampInt(n: number, lo: number, hi: number, fallback: number): number {
+  const v = Math.round(Number(n))
+  return Number.isFinite(v) ? Math.max(lo, Math.min(hi, v)) : fallback
+}
+function clamp01(n: number): number {
+  return Number.isFinite(n) ? Math.max(0, Math.min(1, n)) : 0
+}
+function normalizeEventKind(k: string): CalendarEventKind {
+  const ok: CalendarEventKind[] = [
+    'exam',
+    'assignment',
+    'quiz',
+    'deadline',
+    'lecture',
+    'other',
+  ]
+  return (ok as string[]).includes(k) ? (k as CalendarEventKind) : 'deadline'
+}
+
+// --- the agent prepares your sessions ahead of time -----------------------
+
+const MISSION_BASE_TIER = 'medium' as const
+
+/** Generate a session's practice items now and cache them, so the student
+ *  never waits when they sit down. */
+export async function prepareSession(
+  missionId: string,
+  planSession: Pick<PlanSession, 'id' | 'topic_id' | 'strategy_level' | 'item_count'>,
+  ctx: { subjectName: string; topicName: string; level: number },
+): Promise<MissionArtifact | null> {
+  if (!supabase) return null
+
+  // already prepared?
+  const { data: existing } = await supabase
+    .from('mission_artifacts')
+    .select('id')
+    .eq('plan_session_id', planSession.id)
+    .eq('kind', 'session_items')
+    .maybeSingle()
+  if (existing) return null
+
+  const placeholder = await createArtifact({
+    mission_id: missionId,
+    kind: 'session_items',
+    title: `${ctx.topicName} — session ready`,
+    content: {},
+    topic_id: planSession.topic_id,
+    plan_session_id: planSession.id,
+    status: 'preparing',
+  })
+
+  const difficulty = difficultyForStrategy(
+    MISSION_BASE_TIER,
+    planSession.strategy_level,
+  )
+  const items: PreparedItem[] = []
+  try {
+    for (let i = 0; i < (planSession.item_count || SESSION_ITEM_COUNT); i++) {
+      const q = await generateEnemyQuestion({
+        subject: ctx.subjectName,
+        topic: ctx.topicName,
+        level: ctx.level,
+        difficulty,
+      })
+      items.push({
+        narrative: q.narrative,
+        question: q.question,
+        expectedConcept: q.expectedConcept,
+        difficulty,
+      })
+    }
+  } catch {
+    // partial is fine — the session falls back to live generation for the rest
+  }
+
+  const db = requireDb()
+  const { data } = await db
+    .from('mission_artifacts')
+    .update({ content: { items }, status: 'ready' })
+    .eq('id', placeholder.id)
+    .select('*')
+    .single()
+  return (data ?? null) as MissionArtifact | null
+}
+
+/** The cached items for a plan session, if the agent prepared them. */
+export async function fetchPreparedItems(
+  planSessionId: string,
+): Promise<PreparedItem[] | null> {
+  if (!supabase) return null
+  const { data } = await supabase
+    .from('mission_artifacts')
+    .select('content, status')
+    .eq('plan_session_id', planSessionId)
+    .eq('kind', 'session_items')
+    .maybeSingle()
+  const items = (data?.content as { items?: PreparedItem[] })?.items
+  return data?.status === 'ready' && items?.length ? items : null
+}
+
+// --- the agent writes your revision sheets / reports / drafts -------------
+
+export async function generateRevisionSheet(
+  missionId: string,
+  topicId: string,
+  ctx: { subjectName: string; topicName: string; level: number },
+  createdBy: 'agent' | 'you' = 'you',
+): Promise<MissionArtifact> {
+  const text = await writeRevisionSheet(ctx.subjectName, ctx.topicName, ctx.level)
+  return createArtifact({
+    mission_id: missionId,
+    kind: 'revision_sheet',
+    title: `${ctx.topicName} — revision sheet`,
+    content: { text },
+    topic_id: topicId,
+    created_by: createdBy,
+  })
+}
+
+/** Deterministic "what the agent did" facts from the last 7 days. */
+export function weeklyFacts(snapshot: MissionSnapshot, events: AgentEvent[]): string[] {
+  const weekAgo = toDayString(addDays(new Date(), -7))
+  const recent = events.filter((e) => e.created_at.slice(0, 10) >= weekAgo)
+  const facts: string[] = []
+
+  const applied = recent.filter((e) => e.applied && e.changes?.length)
+  for (const e of applied) {
+    for (const c of e.changes as { op?: string; detail?: string }[]) {
+      if (c.detail) facts.push(`${c.op ?? 'change'}: ${c.detail}`)
+    }
+  }
+
+  const doneThisWeek = snapshot.sessions.filter(
+    (s) => s.status === 'done' && (s.completed_at ?? '').slice(0, 10) >= weekAgo,
+  ).length
+  if (doneThisWeek) facts.push(`${doneThisWeek} practice session(s) completed`)
+
+  const missed = snapshot.sessions.filter((s) => s.status === 'missed').length
+  if (missed) facts.push(`${missed} session(s) currently missed`)
+
+  const notified = recent.filter((e) => e.notified).length
+  if (notified) facts.push(`${notified} decision(s) sent to you`)
+
+  return facts
+}
+
+export async function requestProgressReport(
+  snapshot: MissionSnapshot,
+  events: AgentEvent[],
+  subjectName: string,
+): Promise<MissionArtifact> {
+  const conf = calculatePlanConfidence(
+    snapshot.mission,
+    snapshot.topics,
+    snapshot.mastery,
+    new Date(),
+  )
+  const facts = [
+    ...weeklyFacts(snapshot, events),
+    ...snapshot.mastery.map(
+      (m) =>
+        `${m.topic_id}: mastery ${Math.round(m.mastery_score * 100)}% of ${Math.round(
+          (snapshot.topics.find((t) => t.topic_id === m.topic_id)?.target_mastery ??
+            TARGET_MASTERY_DEFAULT) * 100,
+        )}% target`,
+    ),
+  ]
+  const text = await writeProgressReport({
+    subject: subjectName,
+    reportFacts: facts,
+    daysRemaining: conf.days_remaining,
+    confidence: conf.confidence,
+  })
+  return createArtifact({
+    mission_id: snapshot.mission.id,
+    kind: 'progress_report',
+    title: `Progress report — ${toDayString(new Date())}`,
+    content: { text },
+    created_by: 'you',
+  })
+}
+
+export async function requestMessageDraft(
+  missionId: string,
+  input: {
+    messageKind: 'extension_request' | 'tutor_update'
+    subject: string
+    details: string
+    studentName?: string
+  },
+): Promise<MissionArtifact> {
+  const d = await draftMessage({ ...input, today: toDayString(new Date()) })
+  return createArtifact({
+    mission_id: missionId,
+    kind: 'message_draft',
+    title:
+      input.messageKind === 'extension_request'
+        ? 'Draft — extension request'
+        : 'Draft — tutor update',
+    content: { subject: d.subject, body: d.body },
+    status: 'draft',
+    created_by: 'you',
+  })
 }
 
 // --- agent activity + notifications ------------------------------------------

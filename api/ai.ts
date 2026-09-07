@@ -79,6 +79,22 @@ interface Ctx {
   difficulty?: string
   bossPhase?: 'solve' | 'twist' | 'explain'
   chapter?: string
+
+  // --- agent producer actions ---------------------------------------------
+  /** map_syllabus: the raw syllabus / assignment brief the student pasted. */
+  syllabusText?: string
+  /** map_syllabus: the Atlas catalogue to map onto (subjects → topics). */
+  subjectCatalog?: { id: string; name: string; topics: { id: string; name: string }[] }[]
+  /** map_syllabus / draft_message: today's date, YYYY-MM-DD. */
+  today?: string
+  /** write_progress_report: pre-composed factual lines (deterministic) to phrase. */
+  reportFacts?: string[]
+  daysRemaining?: number
+  confidence?: string
+  /** draft_message: what kind of message, and the student's own stated details. */
+  messageKind?: 'extension_request' | 'tutor_update'
+  details?: string
+  studentName?: string
 }
 
 
@@ -375,6 +391,145 @@ Return JSON:
   }
 }
 
+// --- agent producer actions ------------------------------------------------
+//
+// The Study Agent does the *admin* work around learning — never the learning
+// itself. These actions extract, assemble and phrase; none of them solve or
+// answer the student's coursework.
+
+const AGENT_ACTIONS = new Set([
+  'map_syllabus',
+  'write_revision_sheet',
+  'write_progress_report',
+  'draft_message',
+])
+
+async function handleMapSyllabus(c: Ctx) {
+  const catalog = c.subjectCatalog ?? []
+  const text = await gemini(
+    `You turn a course syllabus or assignment brief into a structured study plan.
+You ONLY map onto the fixed Atlas catalogue you are given — never invent subject
+or topic ids. Match by meaning, not exact wording. Skip anything you cannot map.`,
+    `Today is ${c.today ?? 'unknown'}.
+
+Atlas catalogue (id → name), pick ONE subject and its relevant topic ids:
+${catalog
+  .map(
+    (s) =>
+      `- subject "${s.id}" (${s.name}): ${s.topics.map((t) => `"${t.id}" (${t.name})`).join(', ')}`,
+  )
+  .join('\n')}
+
+Syllabus / brief the student pasted:
+"""
+${(c.syllabusText ?? '').slice(0, 6000)}
+"""
+
+Return JSON:
+- subject_id: the best-matching subject id from the catalogue
+- title: a short mission name, e.g. "Physics Final"
+- topic_ids: array of topic ids from THAT subject that the syllabus covers (1–8)
+- exam_date: the main exam/due date as YYYY-MM-DD if one is stated, else ""
+- sessions_per_week: integer 2–6, your recommendation given the scope and time
+- minutes_per_session: 20, 30, 45 or 60
+- target_mastery: 0.7, 0.75 or 0.8
+- events: array of {title, kind, date} for every OTHER dated item you find —
+  kind is one of exam|assignment|quiz|deadline|lecture|other, date is YYYY-MM-DD.
+- unmapped: array of short strings for topics/sections you could not map.`,
+    S.obj(
+      {
+        subject_id: S.str,
+        title: S.str,
+        topic_ids: { type: 'ARRAY', items: S.str },
+        exam_date: S.str,
+        sessions_per_week: S.num,
+        minutes_per_session: S.num,
+        target_mastery: S.num,
+        events: {
+          type: 'ARRAY',
+          items: S.obj(
+            { title: S.str, kind: S.str, date: S.str },
+            ['title', 'kind', 'date'],
+          ),
+        },
+        unmapped: { type: 'ARRAY', items: S.str },
+      },
+      ['subject_id', 'title', 'topic_ids'],
+    ),
+  )
+  const o = parseModelJson(text)
+  return {
+    kind: 'syllabus_map',
+    subject_id: String(o.subject_id ?? ''),
+    title: String(o.title ?? 'Study Mission'),
+    topic_ids: Array.isArray(o.topic_ids) ? o.topic_ids.map(String) : [],
+    exam_date: String(o.exam_date ?? ''),
+    sessions_per_week: Number(o.sessions_per_week) || 4,
+    minutes_per_session: Number(o.minutes_per_session) || 30,
+    target_mastery: Number(o.target_mastery) || 0.75,
+    events: Array.isArray(o.events)
+      ? o.events.map((e: Record<string, unknown>) => ({
+          title: String(e.title ?? ''),
+          kind: String(e.kind ?? 'deadline'),
+          date: String(e.date ?? ''),
+        }))
+      : [],
+    unmapped: Array.isArray(o.unmapped) ? o.unmapped.map(String) : [],
+  }
+}
+
+async function handleRevisionSheet(c: Ctx) {
+  const text = await gemini(
+    `You write a one-page revision sheet a student can study from. Plain text,
+short lines, light structure (KEY IDEAS / FORMULAS / COMMON MISTAKES / WORKED
+EXAMPLE). The worked example must be a DIFFERENT problem from anything the
+student is currently attempting. Never leave a blank for them to fill — this is
+a reference, not an exercise.`,
+    `Subject: ${c.subject}. Topic: ${c.topic}. Student is roughly level ${c.level}.
+Write the revision sheet now. 180–320 words.`,
+  )
+  return { kind: 'text', text }
+}
+
+async function handleProgressReport(c: Ctx) {
+  const text = await gemini(
+    `You phrase a short, factual progress update a student could send to a tutor
+or parent. Use ONLY the facts given — do not invent grades, effort or plans.
+Two short paragraphs, plain and honest in tone.`,
+    `Subject: ${c.subject}. Days until the exam: ${c.daysRemaining ?? 'unknown'}.
+Plan status: ${c.confidence ?? 'unknown'}.
+Facts to phrase (do not add any):
+${(c.reportFacts ?? []).map((f) => `- ${f}`).join('\n') || '- (no recent activity)'}`,
+  )
+  return { kind: 'text', text }
+}
+
+async function handleDraftMessage(c: Ctx) {
+  const brief =
+    c.messageKind === 'extension_request'
+      ? 'A polite request to a professor for a short extension. The student will review and send it themselves.'
+      : 'A brief, warm update to a tutor about how prep is going. The student will review and send it themselves.'
+  const out = await gemini(
+    `You draft a message the student will read, edit and send themselves. Use
+ONLY the student's own stated details — never fabricate a reason, an illness, a
+grade, or a commitment they did not mention. Keep it concise and respectful.`,
+    `${brief}
+From: ${c.studentName || 'the student'}. Subject area: ${c.subject}. Today: ${c.today ?? 'unknown'}.
+The student's own notes on what to say:
+"""
+${(c.details ?? '').slice(0, 1500)}
+"""
+Return JSON: { "subject": "<email subject line>", "body": "<message body>" }`,
+    S.obj({ subject: S.str, body: S.str }, ['subject', 'body']),
+  )
+  const o = parseModelJson(out)
+  return {
+    kind: 'draft_message',
+    subject: String(o.subject ?? ''),
+    body: String(o.body ?? ''),
+  }
+}
+
 // --- entrypoint ------------------------------------------------------------
 
 // Minimal structural types for the Vercel Node request/response (avoids a
@@ -413,6 +568,31 @@ export default async function handler(req: VercelReq, res: VercelRes) {
 
   const action = body.action ?? ''
   const context = (body.context ?? {}) as Ctx
+
+  // Agent producer actions don't carry a (subject, topic) pair.
+  if (AGENT_ACTIONS.has(action)) {
+    try {
+      switch (action) {
+        case 'map_syllabus':
+          return res.status(200).json(await handleMapSyllabus(context))
+        case 'write_revision_sheet':
+          return res.status(200).json(await handleRevisionSheet(context))
+        case 'write_progress_report':
+          return res.status(200).json(await handleProgressReport(context))
+        case 'draft_message':
+          return res.status(200).json(await handleDraftMessage(context))
+      }
+    } catch (err) {
+      console.error(err)
+      const overloaded = err instanceof GeminiError && err.retryable
+      if (overloaded) res.setHeader('Retry-After', '5')
+      return res.status(overloaded ? 503 : 502).json({
+        error: err instanceof Error ? err.message : 'AI call failed',
+        ...(overloaded ? { retryable: true } : {}),
+      })
+    }
+  }
+
   if (!context.subject || !context.topic) {
     return res.status(400).json({ error: 'context.subject and context.topic are required' })
   }

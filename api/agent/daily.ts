@@ -9,7 +9,7 @@
 // same path; nothing else changes.
 
 import { createClient, type SupabaseClient } from '@supabase/supabase-js'
-import { httpDecide, runTick } from '../../src/study/agent/pipeline'
+import { httpCallAi, httpDecide, runTick } from '../../src/study/agent/pipeline'
 import { routineOccurrenceDates } from '../../src/study/calendar'
 
 export const config = { maxDuration: 300 }
@@ -59,6 +59,7 @@ export default async function handler(req: VercelReq, res: VercelRes) {
     .eq('status', 'active')
   if (error) return res.status(500).json({ error: error.message })
   const decide = httpDecide(baseUrl(req))
+  const callAi = httpCallAi(baseUrl(req))
   const results: Record<string, unknown>[] = []
 
   for (const m of missions ?? []) {
@@ -70,6 +71,7 @@ export default async function handler(req: VercelReq, res: VercelRes) {
         trigger: 'DAILY',
         triggerId: `DAILY:${today}`,
         decide,
+        callAi,
         now,
       })
       results.push({

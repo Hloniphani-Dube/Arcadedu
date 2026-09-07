@@ -13,6 +13,7 @@ function ctx(over: Partial<AgentContext> = {}): AgentContext {
       id: 'm1',
       title: 'Physics Exam',
       subject_id: 'physics',
+      subject_name: 'Physics',
       exam_date: EXAM,
       sessions_per_week: 4,
       minutes_per_session: 30,
@@ -224,6 +225,70 @@ describe('Rule 5 — mission-topic boundary', () => {
       recentNotificationWithin24h: false,
     })
     assert.equal(r.approved, false)
+  })
+})
+
+describe('Rule 8 — producer ops', () => {
+  it('rejects draft_message when the plan is ON_TRACK and no deadline is near', () => {
+    const r = validateDecision({
+      decision: decision({
+        decision: 'KEEP',
+        changes: [{ op: 'draft_message', kind: 'extension_request' }],
+      }),
+      context: ctx(),
+      recentNotificationWithin24h: false,
+    })
+    assert.equal(r.approved, false)
+    assert.match(r.rejected_reason ?? '', /draft_message/)
+  })
+
+  it('allows one draft_message when the plan is OFF_TRACK', () => {
+    const r = validateDecision({
+      decision: decision({
+        decision: 'FLAG_FOR_HUMAN',
+        changes: [{ op: 'draft_message', kind: 'extension_request' }],
+      }),
+      context: ctx({
+        plan_confidence: {
+          confidence: 'OFF_TRACK',
+          days_remaining: 5,
+          required_sessions: 12,
+          available_sessions: 4,
+          ratio: 0.33,
+          weak_topics: [{ topic_id: 'forces', mastery: 0.4, target: 0.75, gap: 0.35 }],
+        },
+      }),
+      recentNotificationWithin24h: false,
+    })
+    assert.equal(r.approved, true, r.rejected_reason ?? '')
+  })
+
+  it('rejects more than two revision sheets in one tick', () => {
+    const r = validateDecision({
+      decision: decision({
+        decision: 'KEEP',
+        changes: [
+          { op: 'write_revision_sheet', topic: 'kinematics' },
+          { op: 'write_revision_sheet', topic: 'forces' },
+          { op: 'write_revision_sheet', topic: 'kinematics' },
+        ],
+      }),
+      context: ctx(),
+      recentNotificationWithin24h: false,
+    })
+    assert.equal(r.approved, false)
+  })
+
+  it('approves prepare_session for a real pending session', () => {
+    const r = validateDecision({
+      decision: decision({
+        decision: 'KEEP',
+        changes: [{ op: 'prepare_session', session_id: 's1' }],
+      }),
+      context: ctx({ current_plan: [pending('s1', 'forces', '2026-09-08')] }),
+      recentNotificationWithin24h: false,
+    })
+    assert.equal(r.approved, true, r.rejected_reason ?? '')
   })
 })
 

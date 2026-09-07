@@ -14,6 +14,7 @@ export interface Profile {
   name: string
   avatar: string
   xp: number
+  onboarded: boolean
 }
 
 export interface SubjectState {
@@ -28,7 +29,12 @@ export interface TopicState {
   current: string | null
 }
 
-const DEFAULT_PROFILE: Profile = { name: 'Adventurer', avatar: DEFAULT_AVATAR, xp: 0 }
+const DEFAULT_PROFILE: Profile = {
+  name: 'Adventurer',
+  avatar: DEFAULT_AVATAR,
+  xp: 0,
+  onboarded: false,
+}
 
 function defaultSubjects(): Record<string, SubjectState> {
   const out: Record<string, SubjectState> = {}
@@ -51,6 +57,8 @@ interface AppState {
   setName: (name: string) => void
   setAvatar: (avatar: string) => void
   addXp: (amount: number) => number
+  /** Mark the first-time onboarding wizard done (name/avatar set, syllabus pasted or skipped). */
+  completeOnboarding: () => void
 
   /** Mark a node cleared and advance `current` to the next node. */
   completeNode: (subjectId: string, topicId: string, nodeId: string) => void
@@ -104,6 +112,11 @@ export const useApp = create<AppState>()((set, get) => ({
     set((s) => ({ profile: { ...s.profile, xp: next } }))
     void persistProfile(get().userId, { xp: next })
     return next
+  },
+
+  completeOnboarding: () => {
+    set((s) => ({ profile: { ...s.profile, onboarded: true } }))
+    void persistProfile(get().userId, { onboarded_at: new Date().toISOString() })
   },
 
   completeNode: (subjectId, topicId, nodeId) => {

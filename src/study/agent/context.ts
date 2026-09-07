@@ -26,6 +26,7 @@ const PROXIMITY_MILESTONES = [14, 7, 3, 1]
 export interface BuildContextInput {
   snapshot: MissionSnapshot
   topicName: (topicId: string) => string
+  subjectName?: string
   level: number
   currentDate?: Date
   /** the student's academic calendar (all upcoming events, any mission) */
@@ -58,6 +59,7 @@ export function buildAgentContext(input: BuildContextInput): AgentContext {
       id: mission.id,
       title: mission.title,
       subject_id: mission.subject_id,
+      subject_name: input.subjectName ?? mission.subject_id,
       exam_date: mission.exam_date,
       sessions_per_week: mission.sessions_per_week,
       minutes_per_session: mission.minutes_per_session,

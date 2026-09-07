@@ -5,9 +5,11 @@ import type {
   AiRequestContext,
   AiResponse,
   BossChallenge,
+  DraftMessageResult,
   EnemyQuestion,
   GradedAnswer,
   StoryQuestion,
+  SyllabusMap,
 } from './types'
 
 // Where the closed-action AI endpoint lives. On Vercel this is the bundled
@@ -126,5 +128,52 @@ export async function gradeBossAnswer(
 ): Promise<GradedAnswer> {
   const r = await callAi('grade_boss_answer', context)
   if (r.kind !== 'graded') throw new AiError(`Expected graded, got ${r.kind}`)
+  return r
+}
+
+// --- agent producer actions -----------------------------------------------
+
+const BLANK = { subject: '', topic: '', level: 1 }
+
+export async function mapSyllabus(input: {
+  syllabusText: string
+  subjectCatalog: AiRequestContext['subjectCatalog']
+  today: string
+}): Promise<SyllabusMap> {
+  const r = await callAi('map_syllabus', { ...BLANK, ...input })
+  if (r.kind !== 'syllabus_map') throw new AiError(`Expected syllabus_map, got ${r.kind}`)
+  return r
+}
+
+export async function writeRevisionSheet(
+  subject: string,
+  topic: string,
+  level: number,
+): Promise<string> {
+  const r = await callAi('write_revision_sheet', { subject, topic, level })
+  if (r.kind !== 'text') throw new AiError(`Expected text, got ${r.kind}`)
+  return r.text
+}
+
+export async function writeProgressReport(input: {
+  subject: string
+  reportFacts: string[]
+  daysRemaining: number
+  confidence: string
+}): Promise<string> {
+  const r = await callAi('write_progress_report', { ...BLANK, ...input })
+  if (r.kind !== 'text') throw new AiError(`Expected text, got ${r.kind}`)
+  return r.text
+}
+
+export async function draftMessage(input: {
+  messageKind: 'extension_request' | 'tutor_update'
+  subject: string
+  details: string
+  studentName?: string
+  today: string
+}): Promise<DraftMessageResult> {
+  const r = await callAi('draft_message', { ...BLANK, ...input })
+  if (r.kind !== 'draft_message') throw new AiError(`Expected draft_message, got ${r.kind}`)
   return r
 }

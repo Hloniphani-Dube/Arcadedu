@@ -21,7 +21,15 @@ export type BattleAction =
   | 'grade_boss_answer'
   | 'generate_story_question'
 
-export type AiAction = LearnAction | BattleAction
+/** The Study Agent's producer actions — admin work around learning, never the
+ *  learning itself: extract, assemble, phrase. */
+export type AgentProducerAction =
+  | 'map_syllabus'
+  | 'write_revision_sheet'
+  | 'write_progress_report'
+  | 'draft_message'
+
+export type AiAction = LearnAction | BattleAction | AgentProducerAction
 
 export interface AiRequestContext {
   subject: string
@@ -41,6 +49,21 @@ export interface AiRequestContext {
   bossPhase?: 'solve' | 'twist' | 'explain'
   /** Story Mode: the chapter's title/theme, used to flavour the brain-teaser. */
   chapter?: string
+
+  // --- agent producer actions ---
+  syllabusText?: string
+  subjectCatalog?: {
+    id: string
+    name: string
+    topics: { id: string; name: string }[]
+  }[]
+  today?: string
+  reportFacts?: string[]
+  daysRemaining?: number
+  confidence?: string
+  messageKind?: 'extension_request' | 'tutor_update'
+  details?: string
+  studentName?: string
 }
 
 export interface AiRequest {
@@ -88,12 +111,33 @@ export interface BossChallenge {
   expectedConcept: string
 }
 
+export interface SyllabusMap {
+  kind: 'syllabus_map'
+  subject_id: string
+  title: string
+  topic_ids: string[]
+  exam_date: string
+  sessions_per_week: number
+  minutes_per_session: number
+  target_mastery: number
+  events: { title: string; kind: string; date: string }[]
+  unmapped: string[]
+}
+
+export interface DraftMessageResult {
+  kind: 'draft_message'
+  subject: string
+  body: string
+}
+
 export type AiResponse =
   | AiTextResponse
   | EnemyQuestion
   | StoryQuestion
   | GradedAnswer
   | BossChallenge
+  | SyllabusMap
+  | DraftMessageResult
 
 export type EnemyTier = 'trivial' | 'easy' | 'medium' | 'hard' | 'boss'
 

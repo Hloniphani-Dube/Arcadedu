@@ -33,6 +33,20 @@ describe('parseDecision — happy path', () => {
     const d = parseDecision({ ...ok, observations: Array.from({ length: 40 }, (_, i) => `o${i}`) })
     assert.equal(d.observations.length, 12)
   })
+
+  it('accepts the producer ops', () => {
+    const d = parseDecision({
+      ...ok,
+      decision: 'KEEP',
+      changes: [
+        { op: 'prepare_session', session_id: 's1' },
+        { op: 'write_revision_sheet', topic: 'momentum' },
+        { op: 'draft_message', kind: 'extension_request' },
+      ],
+    })
+    assert.equal(d.changes.length, 3)
+    assert.equal(d.changes[2].op, 'draft_message')
+  })
 })
 
 describe('parseDecision — rejections', () => {
@@ -58,6 +72,12 @@ describe('parseDecision — rejections', () => {
   })
   it('rejects drop_session with neither session_id nor topic', () => {
     bad({ ...ok, changes: [{ op: 'drop_session' }] })
+  })
+  it('rejects draft_message with an unknown kind', () => {
+    bad({ ...ok, changes: [{ op: 'draft_message', kind: 'love_letter' }] })
+  })
+  it('rejects prepare_session without a session_id', () => {
+    bad({ ...ok, changes: [{ op: 'prepare_session' }] })
   })
   it('rejects a non-object', () => {
     bad(null)

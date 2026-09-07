@@ -89,6 +89,24 @@ export function validateDecision(input: ValidatorInput): ValidatorResult {
     }
   }
 
+  // --- Rule 8 — producer ops (the agent doing admin work for the student) ---
+  const revSheets = decision.changes.filter((c) => c.op === 'write_revision_sheet')
+  if (revSheets.length > 2) {
+    return reject('too many revision sheets in one tick (max 2)')
+  }
+  const drafts = decision.changes.filter((c) => c.op === 'draft_message')
+  if (drafts.length > 0) {
+    const near =
+      context.plan_confidence.confidence === 'OFF_TRACK' ||
+      context.days_remaining <= 3 ||
+      context.deadline_crossings.some((d) => d.days_until <= 3)
+    if (!near || drafts.length > 1) {
+      return reject(
+        'draft_message is only allowed once, when the plan is OFF_TRACK or a deadline is within 3 days',
+      )
+    }
+  }
+
   // --- Rule 4 — escalation threshold ---
   if (ESCALATING_DECISIONS.has(decision.decision)) {
     const maxFlat = Math.max(

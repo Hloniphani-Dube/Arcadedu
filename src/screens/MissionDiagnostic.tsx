@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { Navigate, useNavigate, useParams } from 'react-router-dom'
+import { Navigate, useNavigate, useParams, useLocation } from 'react-router-dom'
 import { motion } from 'framer-motion'
-import { Stethoscope } from 'lucide-react'
+import { Sparkles, Stethoscope } from 'lucide-react'
 import { generateEnemyQuestion, gradeBattleAnswer, AiError } from '../lib/ai'
 import { getSubject, getTopic } from '../game/atlas'
 import { useApp, selectLevel } from '../store'
@@ -25,7 +25,11 @@ interface QueueItem {
 export function MissionDiagnostic() {
   const { missionId } = useParams()
   const navigate = useNavigate()
+  const location = useLocation()
   const level = useApp(selectLevel)
+  const built = (location.state ?? null) as
+    | { builtBy?: string; summary?: string; unmapped?: string[] }
+    | null
 
   const [snapshot, setSnapshot] = useState<MissionSnapshot | null>(null)
   const [phase, setPhase] = useState<Phase>('boot')
@@ -195,6 +199,22 @@ export function MissionDiagnostic() {
           </p>
         </div>
       </header>
+
+      {built?.builtBy === 'agent' && built.summary && (
+        <Panel className="mb-4 flex items-start gap-3 border-mana/40 bg-mana/5 p-4">
+          <Sparkles className="mt-0.5 h-4 w-4 flex-shrink-0 text-mana-bright" />
+          <div className="text-sm">
+            <span className="font-bold text-mana-bright">ARIA</span>
+            <p className="mt-1 text-ink">{built.summary}</p>
+            {built.unmapped && built.unmapped.length > 0 && (
+              <p className="mt-1 text-xs text-muted">
+                Couldn't place: {built.unmapped.join(', ')} — add these by hand
+                from the Calendar if you need them.
+              </p>
+            )}
+          </div>
+        </Panel>
+      )}
 
       <div className="mb-4">
         <div className="mb-1 flex justify-between text-xs text-muted">

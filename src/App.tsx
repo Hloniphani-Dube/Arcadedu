@@ -1,7 +1,9 @@
-import { Routes, Route, Navigate } from 'react-router-dom'
+import { Routes, Route, Navigate, Outlet } from 'react-router-dom'
 import { AppShell } from './components/AppShell'
 import { RequireAuth } from './auth/RequireAuth'
+import { RequireOnboarded } from './auth/RequireOnboarded'
 import { Login } from './screens/Login'
+import { Onboarding } from './screens/Onboarding'
 import { Atlas } from './screens/Atlas'
 import { Country } from './screens/Country'
 import { LevelPath } from './screens/LevelPath'
@@ -28,33 +30,43 @@ export default function App() {
       <Route
         element={
           <RequireAuth>
-            <AppShell />
+            <Outlet />
           </RequireAuth>
         }
       >
-        <Route index element={<Atlas />} />
-        <Route path="s/:subjectId" element={<Country />} />
-        <Route path="s/:subjectId/:topicId" element={<LevelPath />} />
-        <Route path="play/:subjectId/:topicId/:nodeId" element={<Challenge />} />
-        <Route path="story" element={<StoryHome />} />
-        <Route path="story/:chapterId" element={<StoryChapter />} />
-        <Route path="story/:chapterId/:levelId" element={<StoryChallenge />} />
-        <Route path="quests" element={<Quests />} />
-        <Route path="inbox" element={<Inbox />} />
-        <Route path="calendar" element={<Calendar />} />
-        <Route path="missions" element={<MissionsHome />} />
-        <Route path="missions/new" element={<MissionCreate />} />
-        <Route path="missions/:missionId" element={<StudyPlan />} />
+        <Route path="onboarding" element={<Onboarding />} />
+
         <Route
-          path="missions/:missionId/diagnostic"
-          element={<MissionDiagnostic />}
-        />
-        <Route
-          path="missions/:missionId/s/:planSessionId"
-          element={<MissionSession />}
-        />
-        <Route path="learn" element={<LearnMode />} />
-        <Route path="profile" element={<Profile />} />
+          element={
+            <RequireOnboarded>
+              <AppShell />
+            </RequireOnboarded>
+          }
+        >
+          <Route index element={<Atlas />} />
+          <Route path="s/:subjectId" element={<Country />} />
+          <Route path="s/:subjectId/:topicId" element={<LevelPath />} />
+          <Route path="play/:subjectId/:topicId/:nodeId" element={<Challenge />} />
+          <Route path="story" element={<StoryHome />} />
+          <Route path="story/:chapterId" element={<StoryChapter />} />
+          <Route path="story/:chapterId/:levelId" element={<StoryChallenge />} />
+          <Route path="quests" element={<Quests />} />
+          <Route path="inbox" element={<Inbox />} />
+          <Route path="calendar" element={<Calendar />} />
+          <Route path="missions" element={<MissionsHome />} />
+          <Route path="missions/new" element={<MissionCreate />} />
+          <Route path="missions/:missionId" element={<StudyPlan />} />
+          <Route
+            path="missions/:missionId/diagnostic"
+            element={<MissionDiagnostic />}
+          />
+          <Route
+            path="missions/:missionId/s/:planSessionId"
+            element={<MissionSession />}
+          />
+          <Route path="learn" element={<LearnMode />} />
+          <Route path="profile" element={<Profile />} />
+        </Route>
       </Route>
 
       <Route path="*" element={<Navigate to="/" replace />} />

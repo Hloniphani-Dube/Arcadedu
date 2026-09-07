@@ -6,7 +6,9 @@ import type { SupabaseClient } from '@supabase/supabase-js'
 import { SESSION_ITEM_COUNT, TARGET_MASTERY_DEFAULT } from '../config.ts'
 import { daysBetween } from '../dates.ts'
 import { generatePlan } from '../plan.ts'
+import { difficultyForStrategy } from '../strategy.ts'
 import type { AgentChange, AgentContext } from './contract.ts'
+import type { CallAiFn } from './pipeline.ts'
 import { pickInsertDate, weekIndexFrom } from './schedule.ts'
 
 export interface AppliedChange {
@@ -19,6 +21,7 @@ export async function applyChanges(
   missionId: string,
   changes: AgentChange[],
   context: AgentContext,
+  callAi?: CallAiFn,
 ): Promise<AppliedChange[]> {
   const applied: AppliedChange[] = []
   const from = context.current_date
@@ -125,6 +128,112 @@ export async function applyChanges(
           .eq('mission_id', missionId)
           .eq('status', 'pending')
         applied.push({ op: c.op, detail: `${c.session_id} → ${c.to_date}` })
+        break
+      }
+
+      // --- producer ops: the agent does admin work FOR the student ---
+
+      case 'prepare_session': {
+        if (!callAi) break
+        const s = context.current_plan.find((x) => x.id === c.session_id)
+        if (!s || s.status !== 'pending') break
+        const { data: dupe } = await db
+          .from('mission_artifacts')
+          .select('id')
+          .eq('plan_session_id', s.id)
+          .eq('kind', 'session_items')
+          .maybeSingle()
+        if (dupe) break
+        const topicName =
+          context.topics.find((t) => t.topic_id === s.topic_id)?.name ??
+          s.topic_id
+        const difficulty = difficultyForStrategy('medium', s.strategy_level)
+        const items: unknown[] = []
+        for (let i = 0; i < SESSION_ITEM_COUNT; i++) {
+          try {
+            const q = (await callAi('generate_enemy_question', {
+              subject: context.mission.subject_name,
+              topic: topicName,
+              level: context.student_model.level,
+              difficulty,
+            })) as {
+              narrative?: string
+              question?: string
+              expectedConcept?: string
+            }
+            if (q?.question) {
+              items.push({
+                narrative: q.narrative ?? '',
+                question: q.question,
+                expectedConcept: q.expectedConcept ?? '',
+                difficulty,
+              })
+            }
+          } catch {
+            break
+          }
+        }
+        await db.from('mission_artifacts').insert({
+          mission_id: missionId,
+          topic_id: s.topic_id,
+          plan_session_id: s.id,
+          kind: 'session_items',
+          title: `${topicName} — session ready`,
+          content: { items },
+          status: items.length ? 'ready' : 'archived',
+        })
+        applied.push({ op: c.op, detail: `${items.length} items for ${topicName}` })
+        break
+      }
+
+      case 'write_revision_sheet': {
+        if (!callAi) break
+        const topicName =
+          context.topics.find((t) => t.topic_id === c.topic)?.name ?? c.topic
+        const r = (await callAi('write_revision_sheet', {
+          subject: context.mission.subject_name,
+          topic: topicName,
+          level: context.student_model.level,
+        })) as { text?: string }
+        if (r?.text) {
+          await db.from('mission_artifacts').insert({
+            mission_id: missionId,
+            topic_id: c.topic,
+            kind: 'revision_sheet',
+            title: `${topicName} — revision sheet`,
+            content: { text: r.text },
+            status: 'ready',
+          })
+          applied.push({ op: c.op, detail: `revision sheet for ${topicName}` })
+        }
+        break
+      }
+
+      case 'draft_message': {
+        if (!callAi) break
+        const weak = context.plan_confidence.weak_topics
+          .map((w) => w.topic_id)
+          .slice(0, 3)
+          .join(', ')
+        const d = (await callAi('draft_message', {
+          messageKind: c.kind,
+          subject: context.mission.subject_name,
+          details: `The study plan is ${context.plan_confidence.confidence} with ${context.days_remaining} days to the exam.${weak ? ` Topics still below target: ${weak}.` : ''}`,
+          today: context.current_date,
+        })) as { subject?: string; body?: string }
+        if (d?.body) {
+          await db.from('mission_artifacts').insert({
+            mission_id: missionId,
+            kind: 'message_draft',
+            title:
+              c.kind === 'extension_request'
+                ? 'Draft — extension request'
+                : 'Draft — tutor update',
+            content: { subject: d.subject ?? '', body: d.body },
+            status: 'draft',
+          })
+          applied.push({ op: c.op, detail: `drafted ${c.kind}` })
+        }
         break
       }
     }

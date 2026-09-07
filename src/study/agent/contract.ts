@@ -31,6 +31,10 @@ export const CHANGE_OPS = [
   'drop_session',
   'move_session',
   'replan',
+  // producer ops — the agent does admin work FOR the student
+  'prepare_session',
+  'write_revision_sheet',
+  'draft_message',
 ] as const
 export type ChangeOpName = (typeof CHANGE_OPS)[number]
 
@@ -66,6 +70,18 @@ export interface MoveSessionChange {
 export interface ReplanChange {
   op: 'replan'
 }
+export interface PrepareSessionChange {
+  op: 'prepare_session'
+  session_id: string
+}
+export interface WriteRevisionSheetChange {
+  op: 'write_revision_sheet'
+  topic: string
+}
+export interface DraftMessageChange {
+  op: 'draft_message'
+  kind: 'extension_request' | 'tutor_update'
+}
 
 export type AgentChange =
   | SetStrategyChange
@@ -74,6 +90,9 @@ export type AgentChange =
   | DropSessionChange
   | MoveSessionChange
   | ReplanChange
+  | PrepareSessionChange
+  | WriteRevisionSheetChange
+  | DraftMessageChange
 
 export interface AgentDecisionJson {
   decision: AgentDecision
@@ -171,6 +190,17 @@ function parseChange(raw: unknown, i: number): AgentChange {
     }
     case 'replan':
       return { op }
+    case 'prepare_session':
+      return { op, session_id: str(c.session_id, `changes[${i}].session_id`) }
+    case 'write_revision_sheet':
+      return { op, topic: str(c.topic, `changes[${i}].topic`) }
+    case 'draft_message': {
+      const kind = c.kind
+      if (kind !== 'extension_request' && kind !== 'tutor_update') {
+        throw new DecisionParseError(`changes[${i}].kind must be extension_request or tutor_update`)
+      }
+      return { op, kind }
+    }
   }
 }
 
@@ -209,6 +239,7 @@ export interface AgentContext {
     id: string
     title: string
     subject_id: string
+    subject_name: string
     exam_date: string
     sessions_per_week: number
     minutes_per_session: number

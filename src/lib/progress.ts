@@ -24,7 +24,7 @@ function warn(scope: string, err: unknown) {
 /** Read the full progress snapshot for a user. Missing rows → defaults. */
 export async function fetchProgress(userId: string): Promise<ProgressSnapshot> {
   const empty: ProgressSnapshot = {
-    profile: { name: 'Adventurer', avatar: DEFAULT_AVATAR, xp: 0 },
+    profile: { name: 'Adventurer', avatar: DEFAULT_AVATAR, xp: 0, onboarded: false },
     subjects: {},
     topics: {},
   }
@@ -32,7 +32,7 @@ export async function fetchProgress(userId: string): Promise<ProgressSnapshot> {
 
   try {
     const [{ data: prof }, { data: subs }, { data: tops }] = await Promise.all([
-      supabase.from('profiles').select('display_name, avatar, xp').eq('id', userId).maybeSingle(),
+      supabase.from('profiles').select('display_name, avatar, xp, onboarded_at').eq('id', userId).maybeSingle(),
       supabase.from('subject_progress').select('subject_id, unlocked, clears').eq('user_id', userId),
       supabase
         .from('topic_progress')
@@ -46,6 +46,7 @@ export async function fetchProgress(userId: string): Promise<ProgressSnapshot> {
         // '🧑‍🎓' is the old DB column default → treat as "never chosen".
         avatar: !prof?.avatar || prof.avatar === '🧑‍🎓' ? DEFAULT_AVATAR : prof.avatar,
         xp: prof?.xp ?? 0,
+        onboarded: !!prof?.onboarded_at,
       },
       subjects: {},
       topics: {},
@@ -83,7 +84,7 @@ export async function ensureProfile(userId: string, displayName?: string) {
 
 export async function persistProfile(
   userId: string | null,
-  patch: { display_name?: string; avatar?: string; xp?: number },
+  patch: { display_name?: string; avatar?: string; xp?: number; onboarded_at?: string },
 ) {
   if (!supabase || !userId) return
   try {

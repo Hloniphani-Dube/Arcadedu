@@ -6,24 +6,37 @@ import {
   CalendarClock,
   Check,
   CircleDashed,
+  FileText,
+  Mail,
   RefreshCw,
+  ScrollText,
   Sparkles,
   Stethoscope,
   X,
 } from 'lucide-react'
 import { useAuth } from '../auth/auth-context'
 import { getSubject, getTopic } from '../game/atlas'
+import { useApp, selectLevel } from '../store'
 import {
+  fetchAgentEvents,
+  fetchArtifacts,
   fetchMissionSnapshot,
   fetchNotifications,
+  generateRevisionSheet,
   markMissedSessions,
   markNotificationRead,
+  prepareSession,
   regeneratePlan,
+  requestMessageDraft,
+  requestProgressReport,
+  setArtifactStatus,
+  weeklyFacts,
 } from '../study/db'
 import { runAgentTick } from '../study/agent'
 import { calculatePlanConfidence } from '../study/confidence'
 import { daysBetween } from '../study/dates'
 import type {
+  MissionArtifact,
   MissionSnapshot,
   PlanSession,
   StudyNotification,
@@ -31,6 +44,7 @@ import type {
 import { ConfidenceBadge, MasteryBar, StrategyPill } from '../study/ui'
 import { SESSION_KIND_LABEL } from '../study/labels'
 import { AgentActivity } from '../study/AgentActivity'
+import { ArtifactCard } from '../study/ArtifactCard'
 import { NotificationCard } from '../study/NotificationCard'
 import {
   Panel,
@@ -45,24 +59,34 @@ import {
 export function StudyPlan() {
   const { missionId } = useParams()
   const { user } = useAuth()
+  const playerLevel = useApp(selectLevel)
   const [snap, setSnap] = useState<MissionSnapshot | null>(null)
   const [notes, setNotes] = useState<StudyNotification[]>([])
+  const [artifacts, setArtifacts] = useState<MissionArtifact[]>([])
+  const [brief, setBrief] = useState<string[]>([])
   const [error, setError] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
   const [agentBusy, setAgentBusy] = useState(false)
   const [agentMsg, setAgentMsg] = useState<string | null>(null)
+  const [working, setWorking] = useState<string | null>(null)
   const [activityKey, setActivityKey] = useState(0)
 
   const load = useCallback(async () => {
     if (!missionId) return
     try {
       await markMissedSessions(missionId)
-      const s = await fetchMissionSnapshot(missionId)
+      const [s, arts, events] = await Promise.all([
+        fetchMissionSnapshot(missionId),
+        fetchArtifacts(missionId),
+        fetchAgentEvents(missionId, 30),
+      ])
       if (!s) {
         setError('Mission not found')
         return
       }
       setSnap(s)
+      setArtifacts(arts)
+      setBrief(weeklyFacts(s, events))
       if (user) {
         const n = await fetchNotifications(user.id, { unreadOnly: true })
         setNotes(n.filter((x) => x.mission_id === missionId))
@@ -79,10 +103,29 @@ export function StudyPlan() {
     void load()
   }, [missionId, load])
 
+  // The agent prepares the next session's items ahead of time (run once).
+  const preppedFor = useRef<string | null>(null)
+  useEffect(() => {
+    if (!snap) return
+    const next = snap.sessions.find((s) => s.status === 'pending')
+    if (!next || preppedFor.current === next.id) return
+    if (artifacts.some((a) => a.plan_session_id === next.id)) {
+      preppedFor.current = next.id
+      return
+    }
+    preppedFor.current = next.id
+    const topic = getTopic(snap.mission.subject_id, next.topic_id)
+    void prepareSession(snap.mission.id, next, {
+      subjectName: getSubject(snap.mission.subject_id)?.name ?? snap.mission.subject_id,
+      topicName: topic?.name ?? next.topic_id,
+      level: playerLevel,
+    }).then((a) => {
+      if (a) setArtifacts((prev) => [a, ...prev])
+    })
+  }, [snap, artifacts, playerLevel])
+
   if (error) {
-    return (
-      <Panel className="border-hp/40 p-5 text-sm text-hp">{error}</Panel>
-    )
+    return <Panel className="border-hp/40 p-5 text-sm text-hp">{error}</Panel>
   }
   if (!snap) {
     return (
@@ -94,6 +137,7 @@ export function StudyPlan() {
 
   const { mission, topics, mastery, sessions } = snap
   const subject = getSubject(mission.subject_id)
+  const subjectName = subject?.name ?? mission.subject_id
   const diagnosed = mastery.length > 0
   const conf = calculatePlanConfidence(mission, topics, mastery, new Date())
   const masteryByTopic = new Map(mastery.map((m) => [m.topic_id, m]))
@@ -134,6 +178,64 @@ export function StudyPlan() {
     await load()
   }
 
+  async function makeRevisionSheet(topicId: string) {
+    if (!snap) return
+    setWorking(`rev:${topicId}`)
+    try {
+      await generateRevisionSheet(
+        snap.mission.id,
+        topicId,
+        {
+          subjectName,
+          topicName: getTopic(mission.subject_id, topicId)?.name ?? topicId,
+          level: playerLevel,
+        },
+        'you',
+      )
+      await load()
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Could not write the sheet')
+    } finally {
+      setWorking(null)
+    }
+  }
+
+  async function makeProgressReport() {
+    if (!snap) return
+    setWorking('report')
+    try {
+      const events = await fetchAgentEvents(snap.mission.id, 30)
+      await requestProgressReport(snap, events, subjectName)
+      await load()
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Could not write the report')
+    } finally {
+      setWorking(null)
+    }
+  }
+
+  async function makeEmailDraft() {
+    if (!snap) return
+    const details = window.prompt(
+      'What should the email say? A sentence or two in your own words — the agent will phrase it, not invent anything.',
+    )
+    if (!details?.trim()) return
+    setWorking('email')
+    try {
+      await requestMessageDraft(snap.mission.id, {
+        messageKind: 'extension_request',
+        subject: subjectName,
+        details: details.trim(),
+        studentName: user?.email?.split('@')[0],
+      })
+      await load()
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Could not draft the message')
+    } finally {
+      setWorking(null)
+    }
+  }
+
   async function onNoteAction(note: StudyNotification, intent: string) {
     if (intent === 'add_session' && snap) {
       try {
@@ -152,6 +254,15 @@ export function StudyPlan() {
     setNotes((prev) => prev.filter((n) => n.id !== note.id))
   }
 
+  async function setArtifact(id: string, status: 'ready' | 'archived') {
+    await setArtifactStatus(id, status)
+    setArtifacts((prev) =>
+      status === 'archived'
+        ? prev.filter((a) => a.id !== id)
+        : prev.map((a) => (a.id === id ? { ...a, status } : a)),
+    )
+  }
+
   return (
     <div>
       <Link
@@ -161,15 +272,14 @@ export function StudyPlan() {
         <ArrowLeft className="h-4 w-4" /> Study Missions
       </Link>
 
-      <header className="bg-grid -mx-4 mb-6 border-b border-edge px-4 pb-6 pt-2 md:-mx-8 md:px-8">
+      <header className="bg-grid -mx-4 mb-6 border-b-2 border-edge px-4 pb-6 pt-4 md:-mx-8 md:px-8">
         <div className="flex flex-wrap items-center gap-3">
           <h1 className="title-serif">{mission.title}</h1>
           {diagnosed && <ConfidenceBadge confidence={conf.confidence} />}
         </div>
         <div className="mt-2 flex items-center gap-1.5 text-sm text-muted">
           <CalendarClock className="h-4 w-4" />
-          {subject?.name ?? mission.subject_id} · exam {mission.exam_date} ·{' '}
-          {conf.days_remaining} days left
+          {subjectName} · exam {mission.exam_date} · {conf.days_remaining} days left
         </div>
       </header>
 
@@ -203,13 +313,22 @@ export function StudyPlan() {
 
       {diagnosed && (
         <>
+          {brief.length > 0 && (
+            <Panel className="mb-6 border-mana/40 bg-mana/5 p-4">
+              <div className="mb-2 flex items-center gap-1.5 text-xs font-bold uppercase tracking-wide text-mana-bright">
+                <Sparkles className="h-3.5 w-3.5" /> What the agent did lately
+              </div>
+              <ul className="list-disc pl-5 text-sm text-muted">
+                {brief.slice(0, 6).map((b, i) => (
+                  <li key={i}>{b}</li>
+                ))}
+              </ul>
+            </Panel>
+          )}
+
           <Panel className="mb-6 grid grid-cols-3 gap-4 p-5">
             <Stat label="Days remaining" value={conf.days_remaining} />
-            <Stat
-              label="Sessions needed"
-              value={conf.required_sessions}
-              tone="mana"
-            />
+            <Stat label="Sessions needed" value={conf.required_sessions} tone="mana" />
             <Stat
               label="Sessions available"
               value={conf.available_sessions}
@@ -266,10 +385,68 @@ export function StudyPlan() {
                         : 'No session queued'}
                     </span>
                   </div>
+                  <Btn
+                    size="sm"
+                    onClick={() => void makeRevisionSheet(mt.topic_id)}
+                    disabled={working === `rev:${mt.topic_id}`}
+                  >
+                    <ScrollText className="h-3.5 w-3.5" />
+                    {working === `rev:${mt.topic_id}`
+                      ? 'Writing…'
+                      : 'Revision sheet'}
+                  </Btn>
                 </Panel>
               )
             })}
           </div>
+
+          {artifacts.length > 0 && (
+            <>
+              <SectionTitle>Prepared for you</SectionTitle>
+              <div className="mb-8 flex flex-col gap-3">
+                {artifacts.map((a) => (
+                  <ArtifactCard
+                    key={a.id}
+                    artifact={a}
+                    onApprove={
+                      a.status === 'draft'
+                        ? () => void setArtifact(a.id, 'ready')
+                        : undefined
+                    }
+                    onArchive={() => void setArtifact(a.id, 'archived')}
+                  />
+                ))}
+              </div>
+            </>
+          )}
+
+          <SectionTitle
+            actions={
+              <>
+                <Btn
+                  size="sm"
+                  onClick={makeProgressReport}
+                  disabled={working === 'report'}
+                >
+                  <FileText className="h-3.5 w-3.5" />
+                  {working === 'report' ? 'Writing…' : 'Progress report'}
+                </Btn>
+                <Btn
+                  size="sm"
+                  onClick={makeEmailDraft}
+                  disabled={working === 'email'}
+                >
+                  <Mail className="h-3.5 w-3.5" />
+                  {working === 'email' ? 'Drafting…' : 'Draft an email'}
+                </Btn>
+              </>
+            }
+          >
+            Ask the agent to write
+          </SectionTitle>
+          <p className="-mt-1 mb-6 text-xs text-muted">
+            The agent drafts; you review and send. Nothing leaves without you.
+          </p>
 
           <SectionTitle
             actions={
@@ -302,6 +479,9 @@ export function StudyPlan() {
                   missionId={mission.id}
                   subjectId={mission.subject_id}
                   session={s}
+                  prepared={artifacts.some(
+                    (a) => a.plan_session_id === s.id && a.status === 'ready',
+                  )}
                 />
               </motion.div>
             ))}
@@ -320,10 +500,12 @@ function SessionRow({
   missionId,
   subjectId,
   session,
+  prepared,
 }: {
   missionId: string
   subjectId: string
   session: PlanSession
+  prepared?: boolean
 }) {
   const topic = getTopic(subjectId, session.topic_id)
   const days = daysBetween(new Date(), session.scheduled_date)
@@ -352,9 +534,12 @@ function SessionRow({
     >
       {icon}
       <div className="min-w-0 flex-1">
-        <div className="flex items-center gap-2 text-sm font-semibold">
+        <div className="flex flex-wrap items-center gap-2 text-sm font-semibold">
           {topic?.name ?? session.topic_id}
           <Chip>{SESSION_KIND_LABEL[session.kind]}</Chip>
+          {prepared && session.status === 'pending' && (
+            <Chip tone="heal">Ready</Chip>
+          )}
         </div>
         <div className="mt-0.5 text-xs text-muted">
           {session.scheduled_date} · {when} · {session.item_count} items

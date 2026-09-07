@@ -10,7 +10,11 @@ import {
 } from '../lib/ai'
 import { getSubject, getTopic } from '../game/atlas'
 import { useApp, selectLevel } from '../store'
-import { fetchMissionSnapshot, recordMissionSession } from '../study/db'
+import {
+  fetchMissionSnapshot,
+  fetchPreparedItems,
+  recordMissionSession,
+} from '../study/db'
 import { runAgentTick } from '../study/agent'
 import { SESSION_ITEM_COUNT, TARGET_MASTERY_DEFAULT } from '../study/config'
 import { difficultyForStrategy, STRATEGY_PLAN } from '../study/strategy'
@@ -19,11 +23,12 @@ import type {
   MasteryUpdate,
   MissionSnapshot,
   PlanSession,
+  PreparedItem,
 } from '../study/types'
 import { QuestionCard } from '../components/QuestionCard'
 import { AriaSpeech, type AriaLine } from '../components/AriaSpeech'
 import { MasteryBar, StrategyPill } from '../study/ui'
-import { Panel, Btn, Spinner } from '../components/ui'
+import { Panel, Btn, Spinner, Chip } from '../components/ui'
 
 type Phase = 'boot' | 'loading' | 'answering' | 'checked' | 'saving' | 'done' | 'error'
 
@@ -53,7 +58,9 @@ export function MissionSession() {
   const [lines, setLines] = useState<AriaLine[]>([])
   const [assisting, setAssisting] = useState(false)
   const [result, setResult] = useState<MasteryUpdate | null>(null)
+  const [prepared, setPrepared] = useState(false)
   const items = useRef<GradedItem[]>([])
+  const preItems = useRef<PreparedItem[] | null>(null)
   const loadingFor = useRef<number | null>(null)
 
   const subject = getSubject(snap?.mission.subject_id)
@@ -73,8 +80,11 @@ export function MissionSession() {
   useEffect(() => {
     if (!missionId || !planSessionId) return
     let live = true
-    fetchMissionSnapshot(missionId)
-      .then((s) => {
+    Promise.all([
+      fetchMissionSnapshot(missionId),
+      fetchPreparedItems(planSessionId),
+    ])
+      .then(([s, prep]) => {
         if (!live) return
         const ps = s?.sessions.find((x) => x.id === planSessionId) ?? null
         if (!s || !ps) {
@@ -83,6 +93,8 @@ export function MissionSession() {
           return
         }
         items.current = []
+        preItems.current = prep
+        setPrepared(!!prep)
         setSnap(s)
         setPlanSession(ps)
       })
@@ -114,12 +126,16 @@ export function MissionSession() {
         })
         pushLine(action, text)
       }
-      const q = await generateEnemyQuestion({
-        subject: subject.name,
-        topic: topic.name,
-        level,
-        difficulty,
-      })
+      // Use the item the agent prepared earlier if there is one — instant.
+      const pre = preItems.current?.[which]
+      const q =
+        pre ??
+        (await generateEnemyQuestion({
+          subject: subject.name,
+          topic: topic.name,
+          level,
+          difficulty,
+        }))
       setNarrative(q.narrative)
       setQuestion(q.question)
       setExpectedConcept(q.expectedConcept)
@@ -246,6 +262,7 @@ export function MissionSession() {
               {topic?.name ?? planSession?.topic_id}
             </span>
             <span className="flex items-center gap-2">
+              {prepared && <Chip tone="heal">Prepped</Chip>}
               <StrategyPill level={strategy} />
               <span className="capitalize">{difficulty}</span>
             </span>
