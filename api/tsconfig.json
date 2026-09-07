@@ -1,0 +1,23 @@
+{
+  // Vercel type-checks every api/*.ts entrypoint (and everything it imports from
+  // src/) with `tsc`. Without this file it falls back to `moduleResolution:
+  // nodenext` + no node types, which rejects the repo's `.ts` import specifiers
+  // (TS5097 / TS2835) and `process` (TS2591). Match how the code is actually
+  // written: bundler resolution, node globals. Emit is done by esbuild, so this
+  // pass is type-check only (noEmit).
+  "compilerOptions": {
+    "target": "es2023",
+    // DOM is here only so the global `fetch`/`Response` types line up with the
+    // rest of the repo (tsconfig.app.json). The runtime is Node.
+    "lib": ["ES2023", "DOM"],
+    "module": "esnext",
+    "moduleResolution": "bundler",
+    "allowImportingTsExtensions": true,
+    "verbatimModuleSyntax": true,
+    "moduleDetection": "force",
+    "types": ["node"],
+    "skipLibCheck": true,
+    "noEmit": true
+  },
+  "include": ["**/*.ts"]
+}
