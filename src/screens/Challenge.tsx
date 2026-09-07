@@ -21,6 +21,7 @@ import {
 } from '../store'
 import { AriaSpeech, type AriaLine } from '../components/AriaSpeech'
 import { QuestionCard } from '../components/QuestionCard'
+import { EnemyPortrait } from '../components/EnemyPortrait'
 import { Btn, Panel, Spinner } from '../components/ui'
 
 const BOSS_TRIALS = ['solve', 'twist', 'explain'] as const
@@ -210,6 +211,7 @@ export function Challenge() {
               )}
             </span>
           </div>
+          <EnemyPortrait tier={node.tier} seed={node.id} className="mx-auto mb-3 mt-3 h-24 w-24" />
           <h1 className="mt-1 text-lg font-bold">{node.title}</h1>
 
           <AnimatePresence mode="wait">

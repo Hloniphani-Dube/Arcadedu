@@ -1,6 +1,6 @@
 import { useMemo, useRef, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { Check, MapPin, ChevronRight, Globe2, Sparkles } from 'lucide-react'
+import { Check, ChevronRight, Globe2, Sparkles } from 'lucide-react'
 import {
   SUBJECTS,
   CONTINENTS,
@@ -94,8 +94,6 @@ export function Atlas() {
   function onPointerUp() {
     drag.current = null
   }
-
-  const hoverSubject = SUBJECTS.find((s) => s.id === hovered)
 
   return (
     <div>
@@ -191,6 +189,7 @@ export function Atlas() {
               <li>Worlds and topics are never locked — jump straight to whatever you want to learn.</li>
               <li>Inside a topic, levels run in order: clear one to unlock the next, ending in a boss challenge.</li>
               <li>Outline = ready to explore, filled indigo = in progress, filled mint = completed.</li>
+              <li>Hover a region to preview it before diving in.</li>
               <li>Drag to pan the map, scroll (or pinch) to zoom.</li>
             </ul>
           </InfoButton>
@@ -199,7 +198,7 @@ export function Atlas() {
         Explore the Atlas
       </SectionTitle>
 
-      <div className="grid gap-4 lg:grid-cols-[1fr_260px]">
+      <div>
         <Panel className="relative overflow-hidden p-0">
           <svg
             ref={svgRef}
@@ -323,79 +322,7 @@ export function Atlas() {
             </g>
           </svg>
         </Panel>
-
-        <div className="flex flex-col gap-3">
-          <Panel className="p-4">
-            {hoverSubject ? (
-              <HoverCard subject={hoverSubject} state={stateOf(hoverSubject)} />
-            ) : (
-              <p className="text-sm text-muted">
-                Hover a region to preview it. Every world is open — sail wherever
-                you like.
-              </p>
-            )}
-          </Panel>
-
-          <Panel className="p-4 text-xs">
-            <div className="mb-2 font-bold uppercase tracking-[0.15em] text-muted">
-              Legend
-            </div>
-            <LegendRow swatch="var(--color-panel)" label="Ready to explore" />
-            <LegendRow swatch="var(--color-mana)" label="In progress" faded />
-            <LegendRow swatch="var(--color-heal)" label="Completed" />
-          </Panel>
-        </div>
       </div>
-    </div>
-  )
-}
-
-function HoverCard({
-  subject,
-  state,
-}: {
-  subject: Subject
-  state: { progress: number; done: boolean }
-}) {
-  return (
-    <div>
-      <div className="flex items-center gap-2">
-        <span className="grid h-8 w-8 place-items-center border border-edge bg-panel-2 text-mana-bright">
-          <SubjectIcon id={subject.id} className="h-4 w-4" />
-        </span>
-        <div className="min-w-0">
-          <div className="truncate font-bold">{subject.name}</div>
-          <div className="text-xs text-muted">{subject.continent}</div>
-        </div>
-        {state.done && <Check className="ml-auto h-4 w-4 text-heal" />}
-      </div>
-      <p className="mt-2 text-sm text-muted">{subject.blurb}</p>
-      <div className="mt-3">
-        <Bar value={Math.round(state.progress * 100)} tone="mana" segments={16} />
-        <div className="mt-2 flex items-center gap-1 text-xs text-mana-bright">
-          <MapPin className="h-3.5 w-3.5" /> Click the region to enter
-        </div>
-      </div>
-    </div>
-  )
-}
-
-function LegendRow({
-  swatch,
-  label,
-  faded,
-}: {
-  swatch: string
-  label: string
-  faded?: boolean
-}) {
-  return (
-    <div className="flex items-center gap-2 py-0.5">
-      <span
-        className="h-3 w-4 border border-edge"
-        style={{ background: swatch, opacity: faded ? 0.4 : 1 }}
-      />
-      <span className="text-muted">{label}</span>
     </div>
   )
 }

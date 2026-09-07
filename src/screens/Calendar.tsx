@@ -16,7 +16,7 @@ import {
   updateCalendarEvent,
   type CalendarSession,
 } from '../study/db'
-import { daysBetween, toDayString } from '../study/dates'
+import { daysBetween, parseDay, toDayString } from '../study/dates'
 import {
   MonthCalendar,
   type DayMarker,
@@ -54,6 +54,26 @@ function relative(today: string, date: string): string {
   return `In ${Math.round(d / 7)} weeks`
 }
 
+function ordinal(n: number): string {
+  if (n % 10 === 1 && n % 100 !== 11) return `${n}st`
+  if (n % 10 === 2 && n % 100 !== 12) return `${n}nd`
+  if (n % 10 === 3 && n % 100 !== 13) return `${n}rd`
+  return `${n}th`
+}
+
+function cadenceLabel(r: Routine): string {
+  switch (r.cadence) {
+    case 'daily':
+      return 'Every day'
+    case 'biweekly':
+      return `Every other ${WEEKDAYS[r.weekday]}`
+    case 'monthly':
+      return `Monthly on the ${ordinal(parseDay(r.anchor_date).getUTCDate())}`
+    default:
+      return `Every ${WEEKDAYS[r.weekday]}`
+  }
+}
+
 export function Calendar() {
   const { user, unconfigured } = useAuth()
   const today = toDayString(new Date())
@@ -73,6 +93,7 @@ export function Calendar() {
   const [rTitle, setRTitle] = useState('')
   const [rCadence, setRCadence] = useState<RoutineCadence>('weekly')
   const [rWeekday, setRWeekday] = useState(1)
+  const [rAnchorDate, setRAnchorDate] = useState(today)
 
   const load = useCallback(async () => {
     if (!user) return
@@ -161,6 +182,7 @@ export function Calendar() {
         title: rTitle,
         cadence: rCadence,
         weekday: rWeekday,
+        anchor_date: rCadence === 'monthly' ? rAnchorDate : undefined,
       })
       setRTitle('')
       await load()
@@ -271,6 +293,13 @@ export function Calendar() {
             placeholder="Add a date — e.g. Physics paper 2"
             className="flex-1 rounded-lg border border-edge bg-void p-2 text-sm outline-none focus:border-mana"
           />
+          <input
+            type="date"
+            value={selectedDay}
+            onChange={(e) => setSelectedDay(e.target.value)}
+            aria-label="Date"
+            className="rounded-lg border border-edge bg-void p-2 text-sm outline-none focus:border-mana"
+          />
           <select
             value={kind}
             onChange={(e) => setKind(e.target.value as CalendarEventKind)}
@@ -313,20 +342,34 @@ export function Calendar() {
             onChange={(e) => setRCadence(e.target.value as RoutineCadence)}
             className="rounded-lg border border-edge bg-void p-2 text-sm outline-none focus:border-mana"
           >
+            <option value="daily">Daily</option>
             <option value="weekly">Weekly</option>
             <option value="biweekly">Every 2 weeks</option>
+            <option value="monthly">Monthly</option>
           </select>
-          <select
-            value={rWeekday}
-            onChange={(e) => setRWeekday(Number(e.target.value))}
-            className="rounded-lg border border-edge bg-void p-2 text-sm outline-none focus:border-mana"
-          >
-            {WEEKDAYS.map((d, i) => (
-              <option key={d} value={i}>
-                {d}
-              </option>
-            ))}
-          </select>
+          {(rCadence === 'weekly' || rCadence === 'biweekly') && (
+            <select
+              value={rWeekday}
+              onChange={(e) => setRWeekday(Number(e.target.value))}
+              className="rounded-lg border border-edge bg-void p-2 text-sm outline-none focus:border-mana"
+            >
+              {WEEKDAYS.map((d, i) => (
+                <option key={d} value={i}>
+                  {d}
+                </option>
+              ))}
+            </select>
+          )}
+          {rCadence === 'monthly' && (
+            <input
+              type="date"
+              value={rAnchorDate}
+              onChange={(e) => setRAnchorDate(e.target.value)}
+              aria-label="Which date each month"
+              title="Repeats on this day of every month"
+              className="rounded-lg border border-edge bg-void p-2 text-sm outline-none focus:border-mana"
+            />
+          )}
           <Btn variant="primary" onClick={addRoutine} disabled={busy || !rTitle.trim()}>
             <span className="flex items-center gap-1.5">
               <Plus className="h-4 w-4" /> Add
@@ -347,10 +390,7 @@ export function Calendar() {
             >
               <div className="min-w-0 flex-1">
                 <div className="text-sm font-semibold">{r.title}</div>
-                <div className="text-xs text-muted">
-                  {r.cadence === 'weekly' ? 'Every' : 'Every other'}{' '}
-                  {WEEKDAYS[r.weekday]}
-                </div>
+                <div className="text-xs text-muted">{cadenceLabel(r)}</div>
               </div>
               <button
                 onClick={() => void setRoutineActive(r.id, !r.active).then(load)}

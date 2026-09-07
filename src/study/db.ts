@@ -912,6 +912,8 @@ export interface RoutineInput {
   title: string
   cadence: RoutineCadence
   weekday: number
+  /** monthly: which day-of-month to repeat on, as YYYY-MM-DD. Defaults to today. */
+  anchor_date?: string
   mission_id?: string | null
 }
 
@@ -935,7 +937,7 @@ export async function createRoutine(input: RoutineInput): Promise<Routine> {
       title: input.title.trim() || 'Recurring task',
       cadence: input.cadence,
       weekday: input.weekday,
-      anchor_date: toDayString(new Date()),
+      anchor_date: input.anchor_date ?? toDayString(new Date()),
       mission_id: input.mission_id ?? null,
     })
     .select('*')

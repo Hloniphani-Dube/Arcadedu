@@ -8,11 +8,10 @@ import {
   Target,
   CalendarDays,
   Inbox as InboxIcon,
+  Settings as SettingsIcon,
   LogOut,
 } from 'lucide-react'
 import { Sidebar, SidebarBody } from './ui/sidebar'
-import { SkinMenu } from './ui/skin-menu'
-import { ColorThemeMenu } from './ui/color-theme-menu'
 import { Avatar } from './icons'
 import { useAuth } from '../auth/auth-context'
 import { useApp, selectLevel } from '../store'
@@ -128,19 +127,17 @@ export function AppShell() {
           </div>
 
           <div className="flex flex-col gap-2">
-            {open && (
-              <>
-                <SkinMenu />
-                <ColorThemeMenu />
-              </>
-            )}
+            <Row
+              link={{ label: 'Settings', href: '/settings', icon: <SettingsIcon className={IC} /> }}
+              open={open}
+            />
             <Link
               to="/profile"
               className={`arcade-frame flex items-center border border-edge bg-panel p-2 transition hover:border-mana ${open ? 'gap-3' : 'justify-center'}`}
             >
               <Avatar
                 value={profile.avatar}
-                className="h-9 w-9 flex-shrink-0 border border-edge"
+                className={`flex-shrink-0 border border-edge transition-all duration-150 ${open ? 'h-9 w-9' : 'h-6 w-6'}`}
               />
               {open && (
                 <div className="min-w-0 flex-1">

@@ -108,7 +108,7 @@ async function materialiseRoutines(
     id: string
     user_id: string
     weekday: number
-    cadence: 'weekly' | 'biweekly'
+    cadence: 'daily' | 'weekly' | 'biweekly' | 'monthly'
     anchor_date: string
   }[]) {
     for (const due of routineOccurrenceDates(r, today, 21)) {

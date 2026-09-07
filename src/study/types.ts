@@ -131,7 +131,7 @@ export interface CalendarEvent {
   updated_at: string
 }
 
-export type RoutineCadence = 'weekly' | 'biweekly'
+export type RoutineCadence = 'daily' | 'weekly' | 'biweekly' | 'monthly'
 
 export interface Routine {
   id: string

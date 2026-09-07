@@ -38,6 +38,34 @@ describe('routineOccurrenceDates', () => {
     )
     assert.deepEqual(d, [])
   })
+
+  it('daily: every day in the window regardless of weekday/anchor', () => {
+    const d = routineOccurrenceDates(
+      { weekday: 0, cadence: 'daily', anchor_date: '2026-09-07' },
+      TODAY,
+      3,
+    )
+    assert.deepEqual(d, ['2026-09-07', '2026-09-08', '2026-09-09', '2026-09-10'])
+  })
+
+  it('monthly: the same day-of-month as the anchor', () => {
+    const d = routineOccurrenceDates(
+      { weekday: 0, cadence: 'monthly', anchor_date: '2026-09-15' },
+      TODAY,
+      60,
+    )
+    assert.deepEqual(d, ['2026-09-15', '2026-10-15'])
+  })
+
+  it('monthly: clamps a late anchor day to the shorter month', () => {
+    // anchor on the 31st; horizon spans Sep (30 days) and Oct (31 days)
+    const d = routineOccurrenceDates(
+      { weekday: 0, cadence: 'monthly', anchor_date: '2026-08-31' },
+      TODAY,
+      60,
+    )
+    assert.deepEqual(d, ['2026-09-30', '2026-10-31'])
+  })
 })
 
 describe('buildReminders', () => {

@@ -4,7 +4,7 @@
 // single "on your plate" list, and surfaces deadline crossings for the agent.
 // Pure — no DB, no model.
 
-import { daysBetween, parseDay } from './dates.ts'
+import { daysBetween, daysInMonth, parseDay } from './dates.ts'
 import type { Reminder } from './types.ts'
 
 interface EventLike {
@@ -20,9 +20,9 @@ interface EventLikeWithTopic extends EventLike {
 // --- recurring routines ---------------------------------------------------
 
 export interface RoutineShape {
-  weekday: number // 0 = Sunday
-  cadence: 'weekly' | 'biweekly'
-  anchor_date: string // YYYY-MM-DD
+  weekday: number // 0 = Sunday — only meaningful for weekly/biweekly
+  cadence: 'daily' | 'weekly' | 'biweekly' | 'monthly'
+  anchor_date: string // YYYY-MM-DD — biweekly parity anchor, or monthly's day-of-month
 }
 
 /** Due dates for a routine within [from, from + horizonDays], as YYYY-MM-DD. */
@@ -32,16 +32,32 @@ export function routineOccurrenceDates(
   horizonDays = 21,
 ): string[] {
   const out: string[] = []
+  const anchorDayOfMonth = parseDay(routine.anchor_date).getUTCDate()
+
   for (let d = 0; d <= horizonDays; d++) {
     const day = new Date(parseDay(from).getTime() + d * 86400000)
+    const iso = day.toISOString().slice(0, 10)
+
+    if (routine.cadence === 'daily') {
+      out.push(iso)
+      continue
+    }
+
+    if (routine.cadence === 'monthly') {
+      const dim = daysInMonth(day.getUTCFullYear(), day.getUTCMonth())
+      // clamp e.g. an anchor of the 31st to the 28th/30th in a shorter month
+      if (day.getUTCDate() !== Math.min(anchorDayOfMonth, dim)) continue
+      out.push(iso)
+      continue
+    }
+
+    // weekly / biweekly — anchored to a day of the week
     if (day.getUTCDay() !== routine.weekday) continue
     if (routine.cadence === 'biweekly') {
-      const weeks = Math.floor(
-        daysBetween(routine.anchor_date, day.toISOString().slice(0, 10)) / 7,
-      )
+      const weeks = Math.floor(daysBetween(routine.anchor_date, iso) / 7)
       if (((weeks % 2) + 2) % 2 !== 0) continue
     }
-    out.push(day.toISOString().slice(0, 10))
+    out.push(iso)
   }
   return out
 }

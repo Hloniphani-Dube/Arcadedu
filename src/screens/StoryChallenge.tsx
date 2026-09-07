@@ -9,6 +9,7 @@ import { STORY_ONE, getChapter, getStoryLevel } from '../game/story'
 import { useApp, selectLevel, selectStoryLevelUnlocked } from '../store'
 import { AriaSpeech, type AriaLine } from '../components/AriaSpeech'
 import { QuestionCard } from '../components/QuestionCard'
+import { EnemyPortrait } from '../components/EnemyPortrait'
 import { Btn, Panel, Spinner } from '../components/ui'
 
 type Phase = 'loading' | 'answering' | 'result' | 'complete'
@@ -151,6 +152,7 @@ export function StoryChallenge() {
             </span>
             <span className="capitalize">{lvl.tier}</span>
           </div>
+          <EnemyPortrait tier={lvl.tier} seed={lvl.id} className="mx-auto mb-3 mt-3 h-24 w-24" />
           <h1 className="mt-1 text-lg font-bold">{lvl.title}</h1>
 
           <AnimatePresence mode="wait">

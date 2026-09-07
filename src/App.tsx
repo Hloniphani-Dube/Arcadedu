@@ -14,6 +14,7 @@ import { StoryChallenge } from './screens/StoryChallenge'
 import { Quests } from './screens/Quests'
 import { LearnMode } from './screens/LearnMode'
 import { Profile } from './screens/Profile'
+import { Settings } from './screens/Settings'
 import { MissionsHome } from './screens/MissionsHome'
 import { MissionCreate } from './screens/MissionCreate'
 import { MissionDiagnostic } from './screens/MissionDiagnostic'
@@ -66,6 +67,7 @@ export default function App() {
           />
           <Route path="learn" element={<LearnMode />} />
           <Route path="profile" element={<Profile />} />
+          <Route path="settings" element={<Settings />} />
         </Route>
       </Route>
 

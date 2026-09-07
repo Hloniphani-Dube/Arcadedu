@@ -35,6 +35,11 @@ export function addDays(from: string | Date, n: number): Date {
   return new Date(parseDay(from).getTime() + n * DAY_MS)
 }
 
+/** Number of days in a given UTC year/month (0-indexed month). */
+export function daysInMonth(year: number, month: number): number {
+  return new Date(Date.UTC(year, month + 1, 0)).getUTCDate()
+}
+
 /** Every calendar day in [start, end] inclusive, as 'YYYY-MM-DD' strings. */
 export function dayRange(start: string | Date, end: string | Date): string[] {
   const out: string[] = []

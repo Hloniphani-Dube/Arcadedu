@@ -56,7 +56,7 @@ export function SkinMenu({ className }: { className?: string }) {
       {open && (
         <ul
           role="listbox"
-          className="arcade-frame absolute bottom-full left-0 z-50 mb-1 w-full border border-edge bg-panel py-1"
+          className="arcade-frame absolute left-0 top-full z-50 mt-1 max-h-72 w-full overflow-y-auto border border-edge bg-panel py-1"
         >
           {SKINS.map((s) => (
             <li key={s.value}>
