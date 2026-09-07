@@ -1,6 +1,6 @@
 import { useMemo, useRef, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { Check, MapPin, ChevronRight, Compass, Sparkles } from 'lucide-react'
+import { Check, MapPin, ChevronRight, Globe2, Sparkles } from 'lucide-react'
 import {
   SUBJECTS,
   CONTINENTS,
@@ -17,6 +17,7 @@ import { useAuth } from '../auth/auth-context'
 import { useInboxCount } from '../study/useInboxCount'
 import { SubjectIcon } from '../components/icons'
 import { Panel, PageHeader, SectionTitle, Stat, Bar } from '../components/ui'
+import { InfoButton } from '../components/ui/info-button'
 
 const MIN_SCALE = 0.7
 const MAX_SCALE = 2.6
@@ -98,11 +99,7 @@ export function Atlas() {
 
   return (
     <div>
-      <PageHeader
-        icon={<Compass className="h-5 w-5" />}
-        title={`Welcome back, ${name}`}
-        subtitle="Pick up where you left off, or set out for a new region."
-      />
+      <PageHeader icon={<Globe2 className="h-5 w-5" />} title={`Welcome back, ${name}`} />
 
       <Panel className="mb-6 grid grid-cols-2 gap-4 p-5 sm:grid-cols-4">
         <Stat label={`Level ${lvl.level}`} value={app.profile.xp} tone="xp" hint="total XP" />
@@ -186,9 +183,17 @@ export function Atlas() {
 
       <SectionTitle
         actions={
-          <span className="text-[11px] normal-case tracking-normal text-muted">
-            drag to pan · scroll to zoom
-          </span>
+          <InfoButton
+            title="How the Atlas works"
+            summary="Drag to pan, scroll to zoom — every world is open, pick any region to start."
+          >
+            <ul className="list-disc space-y-1.5 pl-4">
+              <li>Worlds and topics are never locked — jump straight to whatever you want to learn.</li>
+              <li>Inside a topic, levels run in order: clear one to unlock the next, ending in a boss challenge.</li>
+              <li>Outline = ready to explore, filled indigo = in progress, filled mint = completed.</li>
+              <li>Drag to pan the map, scroll (or pinch) to zoom.</li>
+            </ul>
+          </InfoButton>
         }
       >
         Explore the Atlas

@@ -10,30 +10,18 @@ import {
   selectTopicState,
   STORY_SUBJECT_ID,
 } from '../store'
-import { Panel } from '../components/ui'
+import { Panel, PageHeader } from '../components/ui'
 
 export function StoryHome() {
   const app = useApp()
   const progress = selectStoryProgress(app)
 
   return (
-    <div className="mx-auto max-w-3xl">
-      <header className="mb-6">
-        <div className="flex items-center gap-3">
-          <span className="grid h-12 w-12 place-items-center rounded-xl border border-edge bg-panel-2 text-2xl">
-            <BookOpen className="h-6 w-6 text-mana-bright" />
-          </span>
-          <div>
-            <h1 className="title-serif text-3xl">{STORY_ONE.title}</h1>
-            <p className="text-xs uppercase tracking-wide text-muted">Story Mode</p>
-          </div>
-        </div>
-        <p className="mt-3 text-sm text-muted">{STORY_ONE.tagline}</p>
-        <p className="mt-2 text-sm text-muted">
-          Twelve chapters of general-knowledge puzzles and lateral thinking — no
-          textbook required. Clear a chapter to open the next.
-        </p>
-        <div className="mt-3">
+    <div>
+      <PageHeader icon={<BookOpen className="h-5 w-5" />} title={STORY_ONE.title} />
+
+      <div className="mx-auto max-w-3xl">
+        <div className="mb-6">
           <div className="mb-1 flex justify-between text-xs text-muted">
             <span>The tale so far</span>
             <span>{Math.round(progress * 100)}%</span>
@@ -45,9 +33,8 @@ export function StoryHome() {
             />
           </div>
         </div>
-      </header>
 
-      <div className="flex flex-col gap-3">
+        <div className="flex flex-col gap-3">
         {STORY_ONE.chapters.map((ch, i) => {
           const unlocked = selectStoryChapterUnlocked(app, ch.id)
           const done = selectStoryChapterDone(app, ch.id)
@@ -100,6 +87,7 @@ export function StoryHome() {
             </motion.div>
           )
         })}
+        </div>
       </div>
     </div>
   )

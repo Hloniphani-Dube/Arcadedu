@@ -178,11 +178,7 @@ export function Calendar() {
 
   return (
     <div>
-      <PageHeader
-        icon={<CalendarDays className="h-5 w-5" />}
-        title="Academic Calendar"
-        subtitle="Your exams, deadlines and study sessions. The agent watches these and adjusts your plan around them."
-      />
+      <PageHeader icon={<CalendarDays className="h-5 w-5" />} title="Academic Calendar" />
 
       {error && (
         <Panel className="mb-4 border-hp/40 p-3 text-sm text-hp">{error}</Panel>

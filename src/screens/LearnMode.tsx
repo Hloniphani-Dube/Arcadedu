@@ -50,11 +50,7 @@ export function LearnMode() {
 
   return (
     <div>
-      <PageHeader
-        icon={<GraduationCap className="h-5 w-5" />}
-        title="Study Hall"
-        subtitle="Work a problem with ARIA. Ten fixed actions — no answer machine."
-      />
+      <PageHeader icon={<GraduationCap className="h-5 w-5" />} title="Study Hall" />
 
       <div className="grid gap-4 lg:grid-cols-[1fr_1fr]">
         <div className="flex flex-col gap-4">

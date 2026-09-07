@@ -11,7 +11,6 @@ import {
   LogOut,
 } from 'lucide-react'
 import { Sidebar, SidebarBody } from './ui/sidebar'
-import { ThemeMenu } from './ui/theme-menu'
 import { SkinMenu } from './ui/skin-menu'
 import { ColorThemeMenu } from './ui/color-theme-menu'
 import { Avatar } from './icons'
@@ -47,9 +46,11 @@ const GROUPS: {
 function Row({
   link,
   badge,
+  open,
 }: {
   link: { label: string; href: string; icon: ReactNode; end?: boolean }
   badge?: number
+  open: boolean
 }) {
   return (
     <NavLink
@@ -65,9 +66,15 @@ function Row({
       }
     >
       {link.icon}
-      <span className="flex-1 truncate">{link.label}</span>
+      <span
+        className={`flex-1 truncate transition-opacity duration-150 ${open ? 'opacity-100' : 'opacity-0'}`}
+      >
+        {link.label}
+      </span>
       {badge != null && badge > 0 && (
-        <span className="grid h-4 min-w-4 place-items-center bg-hp px-1 text-[10px] font-bold text-white">
+        <span
+          className={`grid h-4 min-w-4 place-items-center bg-hp px-1 text-[10px] font-bold text-white transition-opacity duration-150 ${open ? 'opacity-100' : 'opacity-0'}`}
+        >
           {badge > 9 ? '9+' : badge}
         </span>
       )}
@@ -76,8 +83,8 @@ function Row({
 }
 
 export function AppShell() {
-  // Desktop rail is always expanded (animate={false}); `open` only drives the
-  // mobile drawer, which starts closed.
+  // `open` drives both the desktop rail (hover to expand, mirrors the
+  // sidebar's own onMouseEnter/onMouseLeave) and the mobile drawer.
   const [open, setOpen] = useState(false)
   const { user, signOut, unconfigured } = useAuth()
   const profile = useApp((s) => s.profile)
@@ -88,17 +95,16 @@ export function AppShell() {
 
   return (
     <div className="flex min-h-dvh w-full flex-col md:flex-row">
-      <Sidebar open={open} setOpen={setOpen} animate={false}>
-        <SidebarBody className="!w-[248px] justify-between gap-6 border-r-2">
+      <Sidebar open={open} setOpen={setOpen}>
+        <SidebarBody className="justify-between gap-6 border-r-2">
           <div className="flex flex-1 flex-col overflow-x-hidden overflow-y-auto">
             <Link
               to="/"
               className="flex items-center gap-2 px-2 py-1 text-base font-black tracking-tight"
             >
-              <span className="grid h-8 w-8 flex-shrink-0 place-items-center border-2 border-edge bg-mana text-white">
-                <Globe2 className="h-4 w-4" />
-              </span>
-              <span className="arcade-face text-[0.8rem]">
+              <span
+                className={`arcade-face whitespace-nowrap text-[0.8rem] transition-opacity duration-150 ${open ? 'opacity-100' : 'opacity-0'}`}
+              >
                 Arcad<span className="text-xp">edu</span>
               </span>
             </Link>
@@ -106,7 +112,9 @@ export function AppShell() {
             <nav className="mt-6 flex flex-col gap-5">
               {GROUPS.map((g) => (
                 <div key={g.heading}>
-                  <div className="mb-1 px-3 text-[10px] font-bold uppercase tracking-[0.2em] text-muted/70">
+                  <div
+                    className={`mb-1 px-3 text-[10px] font-bold uppercase tracking-[0.2em] text-muted/70 transition-opacity duration-150 ${open ? 'opacity-100' : 'opacity-0'}`}
+                  >
                     {g.heading}
                   </div>
                   <div className="flex flex-col">
@@ -115,6 +123,7 @@ export function AppShell() {
                         key={l.href}
                         link={l}
                         badge={l.key === 'inbox' ? inboxCount : undefined}
+                        open={open}
                       />
                     ))}
                   </div>
@@ -124,9 +133,12 @@ export function AppShell() {
           </div>
 
           <div className="flex flex-col gap-2">
-            <SkinMenu />
-            <ThemeMenu />
-            <ColorThemeMenu />
+            {open && (
+              <>
+                <SkinMenu />
+                <ColorThemeMenu />
+              </>
+            )}
             <Link
               to="/profile"
               className="arcade-frame flex items-center gap-3 border border-edge bg-panel p-2 transition hover:border-mana"
@@ -135,7 +147,9 @@ export function AppShell() {
                 value={profile.avatar}
                 className="h-9 w-9 flex-shrink-0 border border-edge"
               />
-              <div className="min-w-0 flex-1">
+              <div
+                className={`min-w-0 flex-1 transition-opacity duration-150 ${open ? 'opacity-100' : 'opacity-0'}`}
+              >
                 <div className="truncate text-sm font-semibold">{name}</div>
                 <div className="truncate text-[11px] text-muted">
                   {unconfigured ? 'Local mode' : `Level ${level}`}
@@ -148,7 +162,12 @@ export function AppShell() {
                 onClick={() => void signOut()}
                 className="flex items-center gap-3 px-3 py-2 text-sm text-muted transition hover:text-hp"
               >
-                <LogOut className={IC} /> Sign out
+                <LogOut className={IC} />
+                <span
+                  className={`whitespace-nowrap transition-opacity duration-150 ${open ? 'opacity-100' : 'opacity-0'}`}
+                >
+                  Sign out
+                </span>
               </button>
             )}
           </div>

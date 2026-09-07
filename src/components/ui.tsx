@@ -28,7 +28,7 @@ type BtnSize = 'sm' | 'md' | 'lg'
 
 const BTN_VARIANT: Record<BtnVariant, string> = {
   primary:
-    'arcade-btn border bg-mana text-white border-edge hover:bg-mana-bright disabled:bg-panel-2 disabled:text-muted',
+    'arcade-btn border bg-mana text-on-accent border-edge hover:bg-mana-bright disabled:bg-panel-2 disabled:text-muted',
   accent:
     'arcade-btn border bg-xp text-on-accent border-edge hover:brightness-110 disabled:bg-panel-2 disabled:text-muted',
   ghost:
@@ -154,29 +154,22 @@ export function Spinner({ label }: { label?: string }) {
 export function PageHeader({
   icon,
   title,
-  subtitle,
   actions,
 }: {
   icon?: ReactNode
   title: ReactNode
-  subtitle?: ReactNode
   actions?: ReactNode
 }) {
   return (
     <header className="bg-grid -mx-4 mb-6 border-b-2 border-edge px-4 pb-6 pt-4 md:-mx-8 md:px-8">
-      <div className="flex flex-wrap items-start justify-between gap-4">
+      <div className="flex flex-wrap items-center justify-between gap-4">
         <div className="flex items-center gap-3">
           {icon && (
             <span className="arcade-frame grid h-11 w-11 flex-shrink-0 place-items-center border-2 border-edge bg-panel text-mana-bright">
               {icon}
             </span>
           )}
-          <div>
-            <h1 className="title-serif">{title}</h1>
-            {subtitle && (
-              <p className="mt-1.5 max-w-prose text-sm text-muted">{subtitle}</p>
-            )}
-          </div>
+          <h1 className="title-serif">{title}</h1>
         </div>
         {actions && <div className="flex flex-wrap items-center gap-2">{actions}</div>}
       </div>

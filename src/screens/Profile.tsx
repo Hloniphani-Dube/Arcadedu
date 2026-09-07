@@ -23,7 +23,7 @@ export function Profile() {
 
   return (
     <div>
-      <PageHeader title="Traveller" subtitle="Your name, look and progress." />
+      <PageHeader title="Traveller" />
 
       <Panel className="p-5">
         <div className="flex items-center gap-4">

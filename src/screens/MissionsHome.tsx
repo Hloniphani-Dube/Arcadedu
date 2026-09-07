@@ -37,7 +37,6 @@ export function MissionsHome() {
       <PageHeader
         icon={<Target className="h-5 w-5" />}
         title="Study Missions"
-        subtitle="Set a goal and a deadline. The agent keeps the plan honest as your week changes — and stays quiet unless it needs a decision from you."
         actions={
           !unconfigured && (
             <Link to="/missions/new">

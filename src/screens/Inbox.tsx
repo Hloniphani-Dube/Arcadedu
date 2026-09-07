@@ -186,11 +186,7 @@ export function Inbox() {
 
   return (
     <div>
-      <PageHeader
-        icon={<InboxIcon className="h-5 w-5" />}
-        title="Inbox"
-        subtitle="What's on your plate, and the few things the agent needs you to decide."
-      />
+      <PageHeader icon={<InboxIcon className="h-5 w-5" />} title="Inbox" />
 
       {digest && (
         <Panel className="mb-6 flex items-start gap-3 border-mana/40 bg-mana/5 p-4">

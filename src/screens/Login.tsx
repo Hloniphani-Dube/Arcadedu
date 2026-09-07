@@ -39,7 +39,7 @@ export function Login() {
         className="w-full max-w-sm"
       >
         <div className="mb-6 text-center">
-          <span className="arcade-frame mx-auto mb-4 grid h-12 w-12 place-items-center border-2 border-edge bg-mana text-white">
+          <span className="arcade-frame mx-auto mb-4 grid h-12 w-12 place-items-center border-2 border-edge bg-mana text-on-accent">
             <Compass className="h-6 w-6" />
           </span>
           <h1 className="title-serif">

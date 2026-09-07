@@ -652,7 +652,7 @@ body::after {
    theme) in every case so danger/success states stay legible.
    =========================================================================== */
 
-[data-color-theme='light'] {
+[data-skin][data-color-theme='light'] {
   --void: #ffffff;
   --panel: #ffffff;
   --panel-2: #eeeeee;
@@ -670,7 +670,7 @@ body::after {
   --app-bg: var(--void);
   --grid-line: color-mix(in srgb, black 8%, transparent);
 }
-[data-color-theme='dark'] {
+[data-skin][data-color-theme='dark'] {
   --void: #000000;
   --panel: #0d0d0d;
   --panel-2: #1a1a1a;
@@ -689,7 +689,7 @@ body::after {
   --grid-line: color-mix(in srgb, white 12%, transparent);
 }
 
-[data-color-theme='forest-cream'] {
+[data-skin][data-color-theme='forest-cream'] {
   --void: #fefae0;
   --panel: color-mix(in srgb, #fefae0 55%, white 45%);
   --panel-2: color-mix(in srgb, #fefae0 80%, #283618 20%);
@@ -708,7 +708,7 @@ body::after {
   --grid-line: color-mix(in srgb, #283618 12%, transparent);
 }
 
-[data-color-theme='lavender-sky'] {
+[data-skin][data-color-theme='lavender-sky'] {
   --void: #bde0fe;
   --panel: color-mix(in srgb, #bde0fe 55%, white 45%);
   --panel-2: color-mix(in srgb, #bde0fe 70%, #cdb4db 30%);
@@ -727,7 +727,7 @@ body::after {
   --grid-line: color-mix(in srgb, #cdb4db 15%, transparent);
 }
 
-[data-color-theme='deep-ocean'] {
+[data-skin][data-color-theme='deep-ocean'] {
   --void: #e9c46a;
   --panel: color-mix(in srgb, #e9c46a 55%, white 45%);
   --panel-2: color-mix(in srgb, #e9c46a 80%, #264653 20%);
@@ -746,7 +746,7 @@ body::after {
   --grid-line: color-mix(in srgb, #264653 12%, transparent);
 }
 
-[data-color-theme='vintage'] {
+[data-skin][data-color-theme='vintage'] {
   --void: #f2cc8f;
   --panel: color-mix(in srgb, #f2cc8f 55%, white 45%);
   --panel-2: color-mix(in srgb, #f2cc8f 80%, #3d405b 20%);
@@ -765,7 +765,7 @@ body::after {
   --grid-line: color-mix(in srgb, #3d405b 12%, transparent);
 }
 
-[data-color-theme='teal-mist'] {
+[data-skin][data-color-theme='teal-mist'] {
   --void: #edf6f9;
   --panel: color-mix(in srgb, #edf6f9 60%, white 40%);
   --panel-2: color-mix(in srgb, #edf6f9 80%, #006d77 20%);
@@ -784,7 +784,7 @@ body::after {
   --grid-line: color-mix(in srgb, #006d77 12%, transparent);
 }
 
-[data-color-theme='plum-cream'] {
+[data-skin][data-color-theme='plum-cream'] {
   --void: #f7ede2;
   --panel: color-mix(in srgb, #f7ede2 60%, white 40%);
   --panel-2: color-mix(in srgb, #f7ede2 80%, #6d597a 20%);
@@ -803,7 +803,7 @@ body::after {
   --grid-line: color-mix(in srgb, #6d597a 15%, transparent);
 }
 
-[data-color-theme='ocean-breeze'] {
+[data-skin][data-color-theme='ocean-breeze'] {
   --void: #a8dadc;
   --panel: color-mix(in srgb, #a8dadc 55%, white 45%);
   --panel-2: color-mix(in srgb, #a8dadc 75%, #1d3557 25%);
@@ -822,7 +822,7 @@ body::after {
   --grid-line: color-mix(in srgb, #1d3557 14%, transparent);
 }
 
-[data-color-theme='midnight-rose'] {
+[data-skin][data-color-theme='midnight-rose'] {
   --void: #f2e9e4;
   --panel: color-mix(in srgb, #f2e9e4 60%, white 40%);
   --panel-2: color-mix(in srgb, #f2e9e4 80%, #4a4e69 20%);
@@ -841,7 +841,7 @@ body::after {
   --grid-line: color-mix(in srgb, #4a4e69 12%, transparent);
 }
 
-[data-color-theme='sage-garden'] {
+[data-skin][data-color-theme='sage-garden'] {
   --void: #f2e8cf;
   --panel: color-mix(in srgb, #f2e8cf 60%, white 40%);
   --panel-2: color-mix(in srgb, #f2e8cf 80%, #386641 20%);
@@ -860,7 +860,7 @@ body::after {
   --grid-line: color-mix(in srgb, #386641 12%, transparent);
 }
 
-[data-color-theme='cocoa-paper'] {
+[data-skin][data-color-theme='cocoa-paper'] {
   --void: #ede0d4;
   --panel: color-mix(in srgb, #ede0d4 60%, white 40%);
   --panel-2: color-mix(in srgb, #ede0d4 80%, #7f5539 20%);

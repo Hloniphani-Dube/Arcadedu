@@ -40,11 +40,7 @@ export function Quests() {
 
   return (
     <div>
-      <PageHeader
-        icon={<Swords className="h-5 w-5" />}
-        title="Active Expeditions"
-        subtitle="Topics you've started but not yet finished."
-      />
+      <PageHeader icon={<Swords className="h-5 w-5" />} title="Active Expeditions" />
 
       {active.length === 0 ? (
         <EmptyState
