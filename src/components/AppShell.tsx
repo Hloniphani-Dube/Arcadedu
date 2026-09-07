@@ -12,6 +12,7 @@ import {
 } from 'lucide-react'
 import { Sidebar, SidebarBody } from './ui/sidebar'
 import { ThemeMenu } from './ui/theme-menu'
+import { SkinMenu } from './ui/skin-menu'
 import { Avatar } from './icons'
 import { useAuth } from '../auth/auth-context'
 import { useApp, selectLevel } from '../store'
@@ -122,6 +123,7 @@ export function AppShell() {
           </div>
 
           <div className="flex flex-col gap-2">
+            <SkinMenu />
             <ThemeMenu />
             <Link
               to="/profile"

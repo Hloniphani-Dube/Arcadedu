@@ -539,7 +539,7 @@ function clampInt(n: number, lo: number, hi: number, fallback: number): number {
 function clamp01(n: number): number {
   return Number.isFinite(n) ? Math.max(0, Math.min(1, n)) : 0
 }
-function normalizeEventKind(k: string): CalendarEventKind {
+export function normalizeEventKind(k: string): CalendarEventKind {
   const ok: CalendarEventKind[] = [
     'exam',
     'assignment',
@@ -868,6 +868,27 @@ export async function createCalendarEvent(
     .single()
   if (error || !data) throw new StudyDbError(error?.message ?? 'Could not add the date')
   return data as CalendarEvent
+}
+
+export async function createCalendarEvents(
+  userId: string,
+  items: { title: string; kind: string; date: string }[],
+): Promise<CalendarEvent[]> {
+  if (items.length === 0) return []
+  const db = requireDb()
+  const { data, error } = await db
+    .from('calendar_events')
+    .insert(
+      items.map((it) => ({
+        user_id: userId,
+        title: it.title.trim() || 'Untitled',
+        kind: normalizeEventKind(it.kind),
+        event_date: it.date,
+      })),
+    )
+    .select('*')
+  if (error) throw new StudyDbError(error.message)
+  return (data ?? []) as CalendarEvent[]
 }
 
 export async function updateCalendarEvent(

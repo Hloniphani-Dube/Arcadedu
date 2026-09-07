@@ -23,6 +23,7 @@ import {
   type MarkerTone,
 } from '../study/MonthCalendar'
 import { SESSION_KIND_LABEL } from '../study/labels'
+import { WeekCheckIn } from '../study/WeekCheckIn'
 import type {
   CalendarEvent,
   CalendarEventKind,
@@ -186,6 +187,10 @@ export function Calendar() {
       {error && (
         <Panel className="mb-4 border-hp/40 p-3 text-sm text-hp">{error}</Panel>
       )}
+
+      <div className="mb-6">
+        <WeekCheckIn onAdded={load} />
+      </div>
 
       <div className="mb-4">
         <MonthCalendar

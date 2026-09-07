@@ -85,7 +85,9 @@ interface Ctx {
   syllabusText?: string
   /** map_syllabus: the Atlas catalogue to map onto (subjects → topics). */
   subjectCatalog?: { id: string; name: string; topics: { id: string; name: string }[] }[]
-  /** map_syllabus / draft_message: today's date, YYYY-MM-DD. */
+  /** map_week: free text describing what's coming up this week. */
+  weekText?: string
+  /** map_syllabus / map_week / draft_message: today's date, YYYY-MM-DD. */
   today?: string
   /** write_progress_report: pre-composed factual lines (deterministic) to phrase. */
   reportFacts?: string[]
@@ -399,6 +401,7 @@ Return JSON:
 
 const AGENT_ACTIONS = new Set([
   'map_syllabus',
+  'map_week',
   'write_revision_sheet',
   'write_progress_report',
   'draft_message',
@@ -475,6 +478,49 @@ Return JSON:
         }))
       : [],
     unmapped: Array.isArray(o.unmapped) ? o.unmapped.map(String) : [],
+  }
+}
+
+async function handleMapWeek(c: Ctx) {
+  const text = await gemini(
+    `You turn a student's free-text description of their week into calendar
+entries. Extract every item that has a clear date attached — tests, quizzes,
+assignments, deadlines, appointments, days off school. Skip anything vague
+with no identifiable date. Never invent items that weren't mentioned.`,
+    `Today is ${c.today ?? 'unknown'}. Resolve relative dates ("Friday",
+"next Tuesday", "in two weeks") against today.
+
+The student's own words:
+"""
+${(c.weekText ?? '').slice(0, 3000)}
+"""
+
+Return JSON:
+- events: array of {title, kind, date} — kind is one of
+  exam|assignment|quiz|deadline|lecture|other, date is YYYY-MM-DD.`,
+    S.obj(
+      {
+        events: {
+          type: 'ARRAY',
+          items: S.obj(
+            { title: S.str, kind: S.str, date: S.str },
+            ['title', 'kind', 'date'],
+          ),
+        },
+      },
+      ['events'],
+    ),
+  )
+  const o = parseModelJson(text)
+  return {
+    kind: 'week_map',
+    events: Array.isArray(o.events)
+      ? o.events.map((e: Record<string, unknown>) => ({
+          title: String(e.title ?? ''),
+          kind: String(e.kind ?? 'other'),
+          date: String(e.date ?? ''),
+        }))
+      : [],
   }
 }
 
@@ -575,6 +621,8 @@ export default async function handler(req: VercelReq, res: VercelRes) {
       switch (action) {
         case 'map_syllabus':
           return res.status(200).json(await handleMapSyllabus(context))
+        case 'map_week':
+          return res.status(200).json(await handleMapWeek(context))
         case 'write_revision_sheet':
           return res.status(200).json(await handleRevisionSheet(context))
         case 'write_progress_report':

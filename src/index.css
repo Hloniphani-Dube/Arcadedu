@@ -2,16 +2,19 @@
 @import 'tw-animate-css';
 
 /*
-  Arcadedu visual system — arcade-only, Codecademy-inspired.
+  Arcadedu visual system — five skins, each with light/dark.
 
-  One axis now: data-theme = "light" | "dark" on <html> ("system" is resolved by
-  ThemeProvider). data-skin is always "arcade". Every colour is a CSS variable so
-  screens keep using the same utility classes (bg-void, text-mana, border-edge, …)
-  and just flip on the theme.
+  Two axes: data-skin = "arcade" | "retro" | "library" | "classical" | "terminal"
+  and data-theme = "light" | "dark" on <html> ("system" is resolved by
+  ThemeProvider). Every colour is a CSS variable so screens keep using the same
+  utility classes (bg-void, text-mana, border-edge, …) regardless of skin.
 
-  Identity: deep navy ground · indigo primary (--mana) · chartreuse highlight
-  (--xp) · pink danger (--hp) · mint success (--heal). Press Start 2P for
-  headings + buttons, VT323 for body. Chunky pixel frames, faint CRT scanlines.
+  The base :root / :root:dark blocks below ARE the "arcade" identity (unchanged
+  from the original arcade-only system) and double as the fallback default.
+  Every other skin is layered on top as additive [data-skin='X'] /
+  [data-skin='X'][data-theme='dark'] blocks near the end of this file — palette,
+  fonts, and a handful of frame/button treatment overrides. Shared component
+  code (Panel/Btn/… in src/components/ui.tsx) never changes per skin.
 */
 
 @custom-variant dark (&:where([data-theme='dark'], [data-theme='dark'] *));
@@ -22,6 +25,7 @@
   --font-display: 'Press Start 2P', ui-monospace, monospace;
   --font-body: 'VT323', 'Courier New', ui-monospace, monospace;
   --radius: 0px;
+  --body-font-size: 1.15rem;
 
   /* LIGHT — near-white lavender ground, navy ink, hard navy edges */
   --void: #eceffb;
@@ -104,12 +108,12 @@
   --color-input: var(--edge);
   --color-ring: var(--mana);
 
-  --radius-sm: 0px;
-  --radius-md: 0px;
-  --radius-lg: 0px;
-  --radius-xl: 0px;
-  --radius-2xl: 0px;
-  --radius-3xl: 0px;
+  --radius-sm: var(--radius);
+  --radius-md: var(--radius);
+  --radius-lg: var(--radius);
+  --radius-xl: var(--radius);
+  --radius-2xl: var(--radius);
+  --radius-3xl: var(--radius);
 }
 
 /* ---------- base ---------- */
@@ -126,15 +130,22 @@ body {
   background-attachment: fixed;
   color: var(--ink);
   font-family: var(--font-body);
-  font-size: 1.15rem;
+  font-size: var(--body-font-size);
   line-height: 1.35;
   -webkit-font-smoothing: none;
   font-smooth: never;
   image-rendering: pixelated;
 }
 
-/* kill every rounded corner — arcade UI is hard-edged */
-* {
+/* kill every rounded corner — hard-edged skins only (arcade/retro/terminal/
+   classical); library opts out below to keep its soft paper-card corners */
+:where(
+    [data-skin='arcade'],
+    [data-skin='retro'],
+    [data-skin='terminal'],
+    [data-skin='classical']
+  )
+  * {
   border-radius: 0 !important;
 }
 
@@ -286,4 +297,348 @@ body::after {
   98% {
     opacity: 0.24;
   }
+}
+
+/* ===========================================================================
+   RETRO — 90s desktop computer. Teal/amber palette, beveled windows, CRT.
+   =========================================================================== */
+
+[data-skin='retro'] {
+  --font-display: 'Silkscreen', ui-monospace, monospace;
+  --font-body: 'Space Mono', 'Courier New', ui-monospace, monospace;
+
+  --void: #eef2ea;
+  --panel: #ffffff;
+  --panel-2: #dbe8d8;
+  --edge: #1f2a1f;
+  --ink: #142014;
+  --muted: #4d6350;
+
+  --mana: #0e7c86;
+  --mana-bright: #12a3b0;
+  --xp: #b38600;
+  --hp: #c23b5a;
+  --heal: #2f8f5b;
+
+  --on-accent: #ffffff;
+  --app-bg: var(--void);
+  --grid-line: color-mix(in srgb, var(--edge) 10%, transparent);
+}
+[data-skin='retro'][data-theme='dark'] {
+  --void: #10171a;
+  --panel: #17242a;
+  --panel-2: #1f333a;
+  --edge: #3d5a63;
+  --ink: #eaf6f2;
+  --muted: #8fb0ac;
+
+  --mana: #17c3d1;
+  --mana-bright: #5fe3ee;
+  --xp: #ffd166;
+  --hp: #ff6b81;
+  --heal: #57e39a;
+
+  --on-accent: #05181a;
+  --app-bg: radial-gradient(900px 520px at 50% -10%, #123238 0%, transparent 60%), var(--void);
+  --grid-line: color-mix(in srgb, var(--edge) 22%, transparent);
+}
+/* beveled "window" shadow instead of a flat pixel offset */
+[data-skin='retro'] .arcade-frame {
+  box-shadow:
+    inset -2px -2px 0 0 rgba(0, 0, 0, 0.35),
+    inset 2px 2px 0 0 rgba(255, 255, 255, 0.18),
+    3px 3px 0 0 var(--edge) !important;
+}
+[data-skin='retro'] a:hover > .arcade-frame,
+[data-skin='retro'] button:hover > .arcade-frame,
+[data-skin='retro'] .arcade-frame.is-interactive:hover {
+  box-shadow:
+    inset -2px -2px 0 0 rgba(0, 0, 0, 0.35),
+    inset 2px 2px 0 0 rgba(255, 255, 255, 0.18),
+    1px 1px 0 0 var(--edge) !important;
+}
+
+/* ===========================================================================
+   TERMINAL — CLI / hacker. Monospace throughout, thin glowing frames.
+   Light = amber printout, dark = classic green phosphor.
+   =========================================================================== */
+
+[data-skin='terminal'] {
+  --font-display: 'IBM Plex Mono', ui-monospace, monospace;
+  --font-body: 'IBM Plex Mono', ui-monospace, monospace;
+
+  --void: #f6efe0;
+  --panel: #fffaf0;
+  --panel-2: #efe3c8;
+  --edge: #6b4a17;
+  --ink: #3a2a08;
+  --muted: #8a6a30;
+
+  --mana: #a5680a;
+  --mana-bright: #c98413;
+  --xp: #7a8f1f;
+  --hp: #b5432c;
+  --heal: #4f7a3d;
+
+  --on-accent: #fffaf0;
+  --app-bg: var(--void);
+  --grid-line: color-mix(in srgb, var(--edge) 10%, transparent);
+}
+[data-skin='terminal'][data-theme='dark'] {
+  --void: #050a05;
+  --panel: #0b140b;
+  --panel-2: #10200f;
+  --edge: #1f5c2c;
+  --ink: #b9ffcf;
+  --muted: #5fae74;
+
+  --mana: #33ff6e;
+  --mana-bright: #7dffa4;
+  --xp: #c8ff5e;
+  --hp: #ff5f6d;
+  --heal: #33ff9e;
+
+  --on-accent: #04140a;
+  --app-bg: radial-gradient(900px 520px at 50% -10%, #0c2a12 0%, transparent 60%), var(--void);
+  --grid-line: color-mix(in srgb, var(--edge) 25%, transparent);
+}
+[data-skin='terminal'] h1,
+[data-skin='terminal'] h2,
+[data-skin='terminal'] button,
+[data-skin='terminal'] .arcade-face,
+[data-skin='terminal'] .title-serif {
+  font-weight: 600;
+}
+/* thin border + phosphor glow instead of an offset shadow */
+[data-skin='terminal'] .arcade-frame {
+  border-width: 1px !important;
+  box-shadow:
+    0 0 0 1px var(--edge),
+    0 0 10px color-mix(in srgb, var(--mana) 35%, transparent) !important;
+}
+[data-skin='terminal'] a:hover > .arcade-frame,
+[data-skin='terminal'] button:hover > .arcade-frame,
+[data-skin='terminal'] .arcade-frame.is-interactive:hover {
+  box-shadow:
+    0 0 0 1px var(--mana),
+    0 0 14px color-mix(in srgb, var(--mana) 55%, transparent) !important;
+  transform: none;
+}
+[data-skin='terminal'] .arcade-btn {
+  border-width: 1px !important;
+  box-shadow:
+    0 0 0 1px var(--edge),
+    0 0 6px color-mix(in srgb, var(--mana) 30%, transparent);
+}
+[data-skin='terminal'] .arcade-btn:active:not(:disabled) {
+  transform: none;
+  box-shadow: 0 0 0 1px var(--mana);
+}
+/* phosphor scanlines, tinted to match each mode instead of arcade's blue/black */
+[data-skin='terminal'] body::after {
+  background: repeating-linear-gradient(
+    to bottom,
+    rgba(107, 74, 23, 0.14) 0px,
+    rgba(107, 74, 23, 0.14) 1px,
+    transparent 1px,
+    transparent 3px
+  );
+  mix-blend-mode: multiply;
+  opacity: 0.22;
+}
+[data-skin='terminal'][data-theme='dark'] body::after {
+  background: repeating-linear-gradient(
+    to bottom,
+    rgba(51, 255, 110, 0.1) 0px,
+    rgba(51, 255, 110, 0.1) 1px,
+    transparent 1px,
+    transparent 3px
+  );
+  mix-blend-mode: screen;
+  opacity: 0.35;
+}
+
+/* ===========================================================================
+   LIBRARY — classic academic. Serif type, warm paper, soft realistic cards.
+   Opts out of the hard-edge reset above, so it keeps rounded corners.
+   =========================================================================== */
+
+[data-skin='library'] {
+  --font-display: 'Playfair Display', Georgia, serif;
+  --font-body: 'Lora', Georgia, serif;
+  --body-font-size: 1rem;
+
+  --void: #f4ecd8;
+  --panel: #fffdf7;
+  --panel-2: #ece0c2;
+  --edge: #cbb98c;
+  --ink: #2b2013;
+  --muted: #7a6b4d;
+
+  --mana: #7a3b2e;
+  --mana-bright: #9c4e3d;
+  --xp: #4f6b3a;
+  --hp: #a1352f;
+  --heal: #3f7d54;
+
+  --on-accent: #fdf6e8;
+  --app-bg: var(--void);
+  --grid-line: color-mix(in srgb, var(--edge) 20%, transparent);
+}
+[data-skin='library'][data-theme='dark'] {
+  --void: #1c150e;
+  --panel: #251c12;
+  --panel-2: #2f2416;
+  --edge: #4a3a24;
+  --ink: #f1e6cf;
+  --muted: #b8a17c;
+
+  --mana: #c97b5f;
+  --mana-bright: #e0987a;
+  --xp: #9dbf6d;
+  --hp: #e0776c;
+  --heal: #7fc999;
+
+  --on-accent: #1c150e;
+  --app-bg: radial-gradient(900px 520px at 50% -10%, #2c2013 0%, transparent 60%), var(--void);
+  --grid-line: color-mix(in srgb, var(--edge) 25%, transparent);
+}
+[data-skin='library'] body {
+  -webkit-font-smoothing: antialiased;
+  font-smooth: always;
+  image-rendering: auto;
+}
+[data-skin='library'] .arcade-frame,
+[data-skin='library'] .arcade-btn,
+[data-skin='library'] input,
+[data-skin='library'] textarea,
+[data-skin='library'] select {
+  border-radius: 10px;
+}
+[data-skin='library'] input,
+[data-skin='library'] textarea,
+[data-skin='library'] select {
+  border-radius: 6px;
+}
+[data-skin='library'] .arcade-frame {
+  border-width: 1px !important;
+  box-shadow:
+    0 1px 2px color-mix(in srgb, var(--edge) 40%, transparent),
+    0 4px 10px rgba(0, 0, 0, 0.12) !important;
+}
+[data-skin='library'] a:hover > .arcade-frame,
+[data-skin='library'] button:hover > .arcade-frame,
+[data-skin='library'] .arcade-frame.is-interactive:hover {
+  box-shadow:
+    0 2px 4px color-mix(in srgb, var(--edge) 45%, transparent),
+    0 8px 18px rgba(0, 0, 0, 0.16) !important;
+  transform: translateY(-1px);
+}
+[data-skin='library'] .arcade-btn {
+  border-width: 1px !important;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+  text-transform: none;
+  font-size: 0.85rem;
+  letter-spacing: 0.01em;
+}
+[data-skin='library'] .arcade-btn:active:not(:disabled) {
+  transform: none;
+  box-shadow: 0 1px 1px rgba(0, 0, 0, 0.15);
+}
+[data-skin='library'] body::after {
+  opacity: 0;
+}
+[data-skin='library'] .bg-grid {
+  background-image: repeating-linear-gradient(
+    to bottom,
+    transparent 0px,
+    transparent 27px,
+    var(--grid-line) 27px,
+    var(--grid-line) 28px
+  );
+  background-size: auto;
+}
+
+/* ===========================================================================
+   CLASSICAL — university / prestige. Parchment, formal serif, ornamental
+   double-rule frames (layered box-shadow, no images needed).
+   =========================================================================== */
+
+[data-skin='classical'] {
+  --font-display: 'Cinzel', Georgia, serif;
+  --font-body: 'EB Garamond', Georgia, serif;
+  --body-font-size: 1.05rem;
+
+  --void: #ece3cf;
+  --panel: #f7f0dd;
+  --panel-2: #e6d9b8;
+  --edge: #5b4a2f;
+  --ink: #2c2213;
+  --muted: #6e5c3c;
+
+  --mana: #7a1f2b;
+  --mana-bright: #9c2f3d;
+  --xp: #8a7228;
+  --hp: #8a2a2a;
+  --heal: #3d6b4a;
+
+  --on-accent: #f7f0dd;
+  --app-bg: radial-gradient(1000px 600px at 50% -10%, #f3e9cc 0%, transparent 60%), var(--void);
+  --grid-line: transparent;
+}
+[data-skin='classical'][data-theme='dark'] {
+  --void: #14100a;
+  --panel: #1c1610;
+  --panel-2: #241c13;
+  --edge: #6b5836;
+  --ink: #ecdfc0;
+  --muted: #a6926c;
+
+  --mana: #c65a63;
+  --mana-bright: #dd7a82;
+  --xp: #d1b45a;
+  --hp: #d1685f;
+  --heal: #7fae8c;
+
+  --on-accent: #14100a;
+  --app-bg: radial-gradient(900px 520px at 50% -10%, #2a2013 0%, transparent 60%), var(--void);
+  --grid-line: transparent;
+}
+[data-skin='classical'] body {
+  -webkit-font-smoothing: antialiased;
+  font-smooth: always;
+  image-rendering: auto;
+}
+/* flat ornamental double-rule frame instead of an offset shadow */
+[data-skin='classical'] .arcade-frame {
+  border-width: 1px !important;
+  box-shadow:
+    0 0 0 1px var(--panel),
+    0 0 0 3px var(--edge) !important;
+}
+[data-skin='classical'] a:hover > .arcade-frame,
+[data-skin='classical'] button:hover > .arcade-frame,
+[data-skin='classical'] .arcade-frame.is-interactive:hover {
+  box-shadow:
+    0 0 0 1px var(--panel),
+    0 0 0 3px var(--mana) !important;
+  transform: none;
+}
+[data-skin='classical'] .arcade-btn {
+  border-width: 1px !important;
+  box-shadow: 0 0 0 1px var(--edge);
+  text-transform: none;
+  font-variant: small-caps;
+  font-size: 0.8rem;
+  letter-spacing: 0.05em;
+}
+[data-skin='classical'] .arcade-btn:active:not(:disabled) {
+  transform: none;
+  box-shadow: 0 0 0 1px var(--mana);
+}
+[data-skin='classical'] body::after {
+  opacity: 0;
+}
+[data-skin='classical'] .bg-grid {
+  background-image: none;
 }

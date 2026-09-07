@@ -1,6 +1,6 @@
 import { useMemo, useRef, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { Check, MapPin, ChevronRight, Compass } from 'lucide-react'
+import { Check, MapPin, ChevronRight, Compass, Sparkles } from 'lucide-react'
 import {
   SUBJECTS,
   CONTINENTS,
@@ -132,6 +132,24 @@ export function Atlas() {
           />
         </Link>
       </Panel>
+
+      <section className="mb-8">
+        <Link to="/calendar" className="block">
+          <Panel interactive className="flex items-center gap-3 p-4">
+            <span className="grid h-9 w-9 flex-shrink-0 place-items-center border border-edge bg-panel-2 text-mana-bright">
+              <Sparkles className="h-4 w-4" />
+            </span>
+            <div className="min-w-0 flex-1">
+              <div className="text-sm font-bold">What's happening this week?</div>
+              <div className="text-[11px] text-muted">
+                Tell ARIA about tests, deadlines or days off — she'll add them
+                to your calendar.
+              </div>
+            </div>
+            <ChevronRight className="h-4 w-4 flex-shrink-0 text-muted" />
+          </Panel>
+        </Link>
+      </section>
 
       {inProgress.length > 0 && (
         <section className="mb-8">

@@ -10,6 +10,7 @@ import type {
   GradedAnswer,
   StoryQuestion,
   SyllabusMap,
+  WeekMap,
 } from './types'
 
 // Where the closed-action AI endpoint lives. On Vercel this is the bundled
@@ -142,6 +143,15 @@ export async function mapSyllabus(input: {
 }): Promise<SyllabusMap> {
   const r = await callAi('map_syllabus', { ...BLANK, ...input })
   if (r.kind !== 'syllabus_map') throw new AiError(`Expected syllabus_map, got ${r.kind}`)
+  return r
+}
+
+export async function mapWeek(input: {
+  weekText: string
+  today: string
+}): Promise<WeekMap> {
+  const r = await callAi('map_week', { ...BLANK, ...input })
+  if (r.kind !== 'week_map') throw new AiError(`Expected week_map, got ${r.kind}`)
   return r
 }
 

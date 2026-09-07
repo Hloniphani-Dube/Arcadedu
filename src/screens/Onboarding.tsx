@@ -7,6 +7,7 @@ import { useApp } from '../store'
 import { SUBJECTS } from '../game/atlas'
 import { createMissionFromSyllabus } from '../study/db'
 import { Btn, Panel, Spinner } from '../components/ui'
+import { Avatar } from '../components/icons'
 import { AvatarPicker } from '../components/AvatarPicker'
 
 const CATALOG = SUBJECTS.map((s) => ({
@@ -105,7 +106,13 @@ export function Onboarding() {
                 <span className="text-xs font-semibold uppercase tracking-wide text-muted">
                   Avatar
                 </span>
-                <AvatarPicker value={profile.avatar} onChange={setAvatar} />
+                <div className="flex items-center gap-4">
+                  <Avatar
+                    value={profile.avatar}
+                    className="h-16 w-16 flex-shrink-0 rounded-2xl border border-edge"
+                  />
+                  <AvatarPicker value={profile.avatar} onChange={setAvatar} />
+                </div>
               </div>
 
               <Btn variant="primary" onClick={() => setStep('syllabus')}>

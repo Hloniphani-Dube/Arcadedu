@@ -9,20 +9,19 @@
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
-      href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=VT323&display=swap"
+      href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=VT323&family=Silkscreen&family=Space+Mono&family=IBM+Plex+Mono:wght@400;600&family=Playfair+Display&family=Lora&family=Cinzel&family=EB+Garamond&display=swap"
       rel="stylesheet"
     />
 
     <script>
-      // Apply the saved colour mode before first paint to avoid a flash.
-      // Skin is always "arcade".
+      // Apply the saved skin + colour mode before first paint to avoid a flash.
       try {
         var t = JSON.parse(localStorage.getItem('arcadedu.theme.v1') || '{}').state || {}
         var mode = t.mode || 'system'
         if (mode === 'system') {
           mode = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'
         }
-        document.documentElement.dataset.skin = 'arcade'
+        document.documentElement.dataset.skin = t.skin || 'arcade'
         document.documentElement.dataset.theme = mode
       } catch (e) {}
     </script>

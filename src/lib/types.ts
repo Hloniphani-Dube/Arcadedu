@@ -25,6 +25,7 @@ export type BattleAction =
  *  learning itself: extract, assemble, phrase. */
 export type AgentProducerAction =
   | 'map_syllabus'
+  | 'map_week'
   | 'write_revision_sheet'
   | 'write_progress_report'
   | 'draft_message'
@@ -57,6 +58,8 @@ export interface AiRequestContext {
     name: string
     topics: { id: string; name: string }[]
   }[]
+  /** map_week: free text describing what's coming up this week. */
+  weekText?: string
   today?: string
   reportFacts?: string[]
   daysRemaining?: number
@@ -130,6 +133,11 @@ export interface DraftMessageResult {
   body: string
 }
 
+export interface WeekMap {
+  kind: 'week_map'
+  events: { title: string; kind: string; date: string }[]
+}
+
 export type AiResponse =
   | AiTextResponse
   | EnemyQuestion
@@ -138,6 +146,7 @@ export type AiResponse =
   | BossChallenge
   | SyllabusMap
   | DraftMessageResult
+  | WeekMap
 
 export type EnemyTier = 'trivial' | 'easy' | 'medium' | 'hard' | 'boss'
 
