@@ -13,6 +13,7 @@ import {
 import { Sidebar, SidebarBody } from './ui/sidebar'
 import { ThemeMenu } from './ui/theme-menu'
 import { SkinMenu } from './ui/skin-menu'
+import { ColorThemeMenu } from './ui/color-theme-menu'
 import { Avatar } from './icons'
 import { useAuth } from '../auth/auth-context'
 import { useApp, selectLevel } from '../store'
@@ -125,6 +126,7 @@ export function AppShell() {
           <div className="flex flex-col gap-2">
             <SkinMenu />
             <ThemeMenu />
+            <ColorThemeMenu />
             <Link
               to="/profile"
               className="arcade-frame flex items-center gap-3 border border-edge bg-panel p-2 transition hover:border-mana"

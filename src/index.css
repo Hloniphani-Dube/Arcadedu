@@ -642,3 +642,239 @@ body::after {
 [data-skin='classical'] .bg-grid {
   background-image: none;
 }
+
+/* ===========================================================================
+   COLOR THEMES — an independent 3rd picker (data-color-theme). Overrides the
+   palette only, regardless of which skin/mode is active. 'default' emits no
+   rule here, so a skin's own palette (above) shows through untouched. Every
+   role is derived from each theme's 1-2 given anchor colors via color-mix();
+   --hp/--heal stay a recognizable red/green (lightly tinted toward the
+   theme) in every case so danger/success states stay legible.
+   =========================================================================== */
+
+[data-color-theme='light'] {
+  --void: #ffffff;
+  --panel: #ffffff;
+  --panel-2: #eeeeee;
+  --edge: #111111;
+  --ink: #000000;
+  --muted: #5b5b5b;
+
+  --mana: #000000;
+  --mana-bright: #2b2b2b;
+  --xp: #000000;
+  --hp: #7a1f1f;
+  --heal: #1f3a1f;
+
+  --on-accent: #ffffff;
+  --app-bg: var(--void);
+  --grid-line: color-mix(in srgb, black 8%, transparent);
+}
+[data-color-theme='dark'] {
+  --void: #000000;
+  --panel: #0d0d0d;
+  --panel-2: #1a1a1a;
+  --edge: #eeeeee;
+  --ink: #ffffff;
+  --muted: #a6a6a6;
+
+  --mana: #ffffff;
+  --mana-bright: #ffffff;
+  --xp: #ffffff;
+  --hp: #d98a8a;
+  --heal: #8fcf9f;
+
+  --on-accent: #000000;
+  --app-bg: var(--void);
+  --grid-line: color-mix(in srgb, white 12%, transparent);
+}
+
+[data-color-theme='forest-cream'] {
+  --void: #fefae0;
+  --panel: color-mix(in srgb, #fefae0 55%, white 45%);
+  --panel-2: color-mix(in srgb, #fefae0 80%, #283618 20%);
+  --edge: #283618;
+  --ink: #283618;
+  --muted: color-mix(in srgb, #283618 55%, #fefae0 45%);
+
+  --mana: #283618;
+  --mana-bright: color-mix(in srgb, #283618 75%, white 25%);
+  --xp: color-mix(in srgb, #283618 60%, white 40%);
+  --hp: color-mix(in srgb, #c23b5a 80%, #283618 20%);
+  --heal: color-mix(in srgb, #3f8f5b 80%, #283618 20%);
+
+  --on-accent: #fefae0;
+  --app-bg: var(--void);
+  --grid-line: color-mix(in srgb, #283618 12%, transparent);
+}
+
+[data-color-theme='lavender-sky'] {
+  --void: #bde0fe;
+  --panel: color-mix(in srgb, #bde0fe 55%, white 45%);
+  --panel-2: color-mix(in srgb, #bde0fe 70%, #cdb4db 30%);
+  --edge: color-mix(in srgb, #cdb4db 60%, black 40%);
+  --ink: color-mix(in srgb, #cdb4db 45%, black 55%);
+  --muted: color-mix(in srgb, #cdb4db 70%, black 30%);
+
+  --mana: color-mix(in srgb, #cdb4db 65%, black 35%);
+  --mana-bright: #cdb4db;
+  --xp: color-mix(in srgb, #bde0fe 65%, black 35%);
+  --hp: color-mix(in srgb, #c23b5a 85%, #cdb4db 15%);
+  --heal: color-mix(in srgb, #3f8f5b 85%, #bde0fe 15%);
+
+  --on-accent: #ffffff;
+  --app-bg: var(--void);
+  --grid-line: color-mix(in srgb, #cdb4db 15%, transparent);
+}
+
+[data-color-theme='deep-ocean'] {
+  --void: #e9c46a;
+  --panel: color-mix(in srgb, #e9c46a 55%, white 45%);
+  --panel-2: color-mix(in srgb, #e9c46a 80%, #264653 20%);
+  --edge: #264653;
+  --ink: #264653;
+  --muted: color-mix(in srgb, #264653 55%, #e9c46a 45%);
+
+  --mana: #264653;
+  --mana-bright: color-mix(in srgb, #264653 75%, white 25%);
+  --xp: color-mix(in srgb, #264653 55%, white 45%);
+  --hp: color-mix(in srgb, #c23b5a 80%, #264653 20%);
+  --heal: color-mix(in srgb, #3f8f5b 80%, #264653 20%);
+
+  --on-accent: #e9c46a;
+  --app-bg: var(--void);
+  --grid-line: color-mix(in srgb, #264653 12%, transparent);
+}
+
+[data-color-theme='vintage'] {
+  --void: #f2cc8f;
+  --panel: color-mix(in srgb, #f2cc8f 55%, white 45%);
+  --panel-2: color-mix(in srgb, #f2cc8f 80%, #3d405b 20%);
+  --edge: #3d405b;
+  --ink: #3d405b;
+  --muted: color-mix(in srgb, #3d405b 55%, #f2cc8f 45%);
+
+  --mana: #3d405b;
+  --mana-bright: color-mix(in srgb, #3d405b 75%, white 25%);
+  --xp: color-mix(in srgb, #3d405b 55%, white 45%);
+  --hp: color-mix(in srgb, #c23b5a 80%, #3d405b 20%);
+  --heal: color-mix(in srgb, #3f8f5b 80%, #3d405b 20%);
+
+  --on-accent: #f2cc8f;
+  --app-bg: var(--void);
+  --grid-line: color-mix(in srgb, #3d405b 12%, transparent);
+}
+
+[data-color-theme='teal-mist'] {
+  --void: #edf6f9;
+  --panel: color-mix(in srgb, #edf6f9 60%, white 40%);
+  --panel-2: color-mix(in srgb, #edf6f9 80%, #006d77 20%);
+  --edge: #006d77;
+  --ink: #006d77;
+  --muted: color-mix(in srgb, #006d77 55%, #edf6f9 45%);
+
+  --mana: #006d77;
+  --mana-bright: color-mix(in srgb, #006d77 75%, white 25%);
+  --xp: color-mix(in srgb, #006d77 55%, white 45%);
+  --hp: color-mix(in srgb, #c23b5a 80%, #006d77 20%);
+  --heal: color-mix(in srgb, #3f8f5b 80%, #006d77 20%);
+
+  --on-accent: #edf6f9;
+  --app-bg: var(--void);
+  --grid-line: color-mix(in srgb, #006d77 12%, transparent);
+}
+
+[data-color-theme='plum-cream'] {
+  --void: #f7ede2;
+  --panel: color-mix(in srgb, #f7ede2 60%, white 40%);
+  --panel-2: color-mix(in srgb, #f7ede2 80%, #6d597a 20%);
+  --edge: color-mix(in srgb, #6d597a 85%, black 15%);
+  --ink: color-mix(in srgb, #6d597a 75%, black 25%);
+  --muted: color-mix(in srgb, #6d597a 60%, #f7ede2 40%);
+
+  --mana: color-mix(in srgb, #6d597a 85%, black 15%);
+  --mana-bright: #6d597a;
+  --xp: color-mix(in srgb, #6d597a 55%, white 45%);
+  --hp: color-mix(in srgb, #c23b5a 85%, #6d597a 15%);
+  --heal: color-mix(in srgb, #3f8f5b 85%, #6d597a 15%);
+
+  --on-accent: #f7ede2;
+  --app-bg: var(--void);
+  --grid-line: color-mix(in srgb, #6d597a 15%, transparent);
+}
+
+[data-color-theme='ocean-breeze'] {
+  --void: #a8dadc;
+  --panel: color-mix(in srgb, #a8dadc 55%, white 45%);
+  --panel-2: color-mix(in srgb, #a8dadc 75%, #1d3557 25%);
+  --edge: #1d3557;
+  --ink: #1d3557;
+  --muted: color-mix(in srgb, #1d3557 55%, #a8dadc 45%);
+
+  --mana: #1d3557;
+  --mana-bright: color-mix(in srgb, #1d3557 75%, white 25%);
+  --xp: color-mix(in srgb, #1d3557 55%, white 45%);
+  --hp: color-mix(in srgb, #c23b5a 80%, #1d3557 20%);
+  --heal: color-mix(in srgb, #3f8f5b 80%, #1d3557 20%);
+
+  --on-accent: #a8dadc;
+  --app-bg: var(--void);
+  --grid-line: color-mix(in srgb, #1d3557 14%, transparent);
+}
+
+[data-color-theme='midnight-rose'] {
+  --void: #f2e9e4;
+  --panel: color-mix(in srgb, #f2e9e4 60%, white 40%);
+  --panel-2: color-mix(in srgb, #f2e9e4 80%, #4a4e69 20%);
+  --edge: #4a4e69;
+  --ink: #4a4e69;
+  --muted: color-mix(in srgb, #4a4e69 55%, #f2e9e4 45%);
+
+  --mana: #4a4e69;
+  --mana-bright: color-mix(in srgb, #4a4e69 75%, white 25%);
+  --xp: color-mix(in srgb, #4a4e69 55%, white 45%);
+  --hp: color-mix(in srgb, #c23b5a 80%, #4a4e69 20%);
+  --heal: color-mix(in srgb, #3f8f5b 80%, #4a4e69 20%);
+
+  --on-accent: #f2e9e4;
+  --app-bg: var(--void);
+  --grid-line: color-mix(in srgb, #4a4e69 12%, transparent);
+}
+
+[data-color-theme='sage-garden'] {
+  --void: #f2e8cf;
+  --panel: color-mix(in srgb, #f2e8cf 60%, white 40%);
+  --panel-2: color-mix(in srgb, #f2e8cf 80%, #386641 20%);
+  --edge: #386641;
+  --ink: #386641;
+  --muted: color-mix(in srgb, #386641 55%, #f2e8cf 45%);
+
+  --mana: #386641;
+  --mana-bright: color-mix(in srgb, #386641 75%, white 25%);
+  --xp: color-mix(in srgb, #386641 55%, white 45%);
+  --hp: color-mix(in srgb, #c23b5a 80%, #386641 20%);
+  --heal: color-mix(in srgb, #3f8f5b 80%, #386641 20%);
+
+  --on-accent: #f2e8cf;
+  --app-bg: var(--void);
+  --grid-line: color-mix(in srgb, #386641 12%, transparent);
+}
+
+[data-color-theme='cocoa-paper'] {
+  --void: #ede0d4;
+  --panel: color-mix(in srgb, #ede0d4 60%, white 40%);
+  --panel-2: color-mix(in srgb, #ede0d4 80%, #7f5539 20%);
+  --edge: color-mix(in srgb, #7f5539 90%, black 10%);
+  --ink: color-mix(in srgb, #7f5539 80%, black 20%);
+  --muted: color-mix(in srgb, #7f5539 60%, #ede0d4 40%);
+
+  --mana: color-mix(in srgb, #7f5539 90%, black 10%);
+  --mana-bright: #7f5539;
+  --xp: color-mix(in srgb, #7f5539 55%, white 45%);
+  --hp: color-mix(in srgb, #c23b5a 85%, #7f5539 15%);
+  --heal: color-mix(in srgb, #3f8f5b 85%, #7f5539 15%);
+
+  --on-accent: #ede0d4;
+  --app-bg: var(--void);
+  --grid-line: color-mix(in srgb, #7f5539 15%, transparent);
+}
