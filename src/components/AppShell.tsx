@@ -59,6 +59,7 @@ function Row({
       className={({ isActive }) =>
         [
           'group flex items-center gap-3 border-l-2 px-3 py-2 text-sm transition',
+          open ? '' : 'justify-center',
           isActive
             ? 'border-mana bg-panel-2 text-ink'
             : 'border-transparent text-muted hover:border-edge hover:text-ink',
@@ -66,15 +67,9 @@ function Row({
       }
     >
       {link.icon}
-      <span
-        className={`flex-1 truncate transition-opacity duration-150 ${open ? 'opacity-100' : 'opacity-0'}`}
-      >
-        {link.label}
-      </span>
-      {badge != null && badge > 0 && (
-        <span
-          className={`grid h-4 min-w-4 place-items-center bg-hp px-1 text-[10px] font-bold text-white transition-opacity duration-150 ${open ? 'opacity-100' : 'opacity-0'}`}
-        >
+      {open && <span className="min-w-0 flex-1 truncate">{link.label}</span>}
+      {open && badge != null && badge > 0 && (
+        <span className="grid h-4 min-w-4 flex-shrink-0 place-items-center bg-hp px-1 text-[10px] font-bold text-white">
           {badge > 9 ? '9+' : badge}
         </span>
       )}
@@ -100,23 +95,23 @@ export function AppShell() {
           <div className="flex flex-1 flex-col overflow-x-hidden overflow-y-auto">
             <Link
               to="/"
-              className="flex items-center gap-2 px-2 py-1 text-base font-black tracking-tight"
+              className={`flex items-center px-2 py-1 text-base font-black tracking-tight ${open ? 'gap-2' : 'justify-center'}`}
             >
-              <span
-                className={`arcade-face whitespace-nowrap text-[0.8rem] transition-opacity duration-150 ${open ? 'opacity-100' : 'opacity-0'}`}
-              >
-                Arcad<span className="text-xp">edu</span>
-              </span>
+              {open && (
+                <span className="arcade-face whitespace-nowrap text-[0.8rem]">
+                  Arcad<span className="text-xp">edu</span>
+                </span>
+              )}
             </Link>
 
             <nav className="mt-6 flex flex-col gap-5">
               {GROUPS.map((g) => (
                 <div key={g.heading}>
-                  <div
-                    className={`mb-1 px-3 text-[10px] font-bold uppercase tracking-[0.2em] text-muted/70 transition-opacity duration-150 ${open ? 'opacity-100' : 'opacity-0'}`}
-                  >
-                    {g.heading}
-                  </div>
+                  {open && (
+                    <div className="mb-1 px-3 text-[10px] font-bold uppercase tracking-[0.2em] text-muted/70">
+                      {g.heading}
+                    </div>
+                  )}
                   <div className="flex flex-col">
                     {g.links.map((l) => (
                       <Row
@@ -141,33 +136,29 @@ export function AppShell() {
             )}
             <Link
               to="/profile"
-              className="arcade-frame flex items-center gap-3 border border-edge bg-panel p-2 transition hover:border-mana"
+              className={`arcade-frame flex items-center border border-edge bg-panel p-2 transition hover:border-mana ${open ? 'gap-3' : 'justify-center'}`}
             >
               <Avatar
                 value={profile.avatar}
                 className="h-9 w-9 flex-shrink-0 border border-edge"
               />
-              <div
-                className={`min-w-0 flex-1 transition-opacity duration-150 ${open ? 'opacity-100' : 'opacity-0'}`}
-              >
-                <div className="truncate text-sm font-semibold">{name}</div>
-                <div className="truncate text-[11px] text-muted">
-                  {unconfigured ? 'Local mode' : `Level ${level}`}
+              {open && (
+                <div className="min-w-0 flex-1">
+                  <div className="truncate text-sm font-semibold">{name}</div>
+                  <div className="truncate text-[11px] text-muted">
+                    {unconfigured ? 'Local mode' : `Level ${level}`}
+                  </div>
                 </div>
-              </div>
+              )}
             </Link>
             {!unconfigured && (
               <button
                 type="button"
                 onClick={() => void signOut()}
-                className="flex items-center gap-3 px-3 py-2 text-sm text-muted transition hover:text-hp"
+                className={`flex items-center px-3 py-2 text-sm text-muted transition hover:text-hp ${open ? 'gap-3' : 'justify-center'}`}
               >
                 <LogOut className={IC} />
-                <span
-                  className={`whitespace-nowrap transition-opacity duration-150 ${open ? 'opacity-100' : 'opacity-0'}`}
-                >
-                  Sign out
-                </span>
+                {open && <span className="whitespace-nowrap">Sign out</span>}
               </button>
             )}
           </div>
