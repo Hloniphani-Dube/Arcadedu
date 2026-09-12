@@ -77,7 +77,6 @@ interface Ctx {
   question?: string
   expectedConcept?: string
   difficulty?: string
-  bossPhase?: 'solve' | 'twist' | 'explain'
   chapter?: string
 
   // --- agent producer actions ---------------------------------------------
@@ -274,21 +273,21 @@ async function handleLearn(action: LearnAction, c: Ctx) {
 
 async function handleEnemyQuestion(c: Ctx) {
   const text = await gemini(
-    `${PREAMBLE(c)}\nYou are generating a battle challenge for the game.`,
+    `${PREAMBLE(c)}\nYou are preparing a practice question for a student.`,
     `Create ONE ${c.difficulty ?? 'medium'} question that tests UNDERSTANDING (not recall) of ${c.topic}.
 Return JSON with these fields kept strictly separate:
-- "narrative": ONE short sentence of game flavour introducing the ${c.difficulty ?? 'medium'} foe / scene. No numbers, no part of the problem here.
+- "guidance": ONE short sentence orienting the student on which concept or method to apply before they attempt it. Plain and direct — no story, no scene-setting, no numbers from the problem.
 - "question": the actual problem, self-contained, solvable in a few lines, NO solution and NO story wording.
 - "expectedConcept": one sentence naming the correct approach / answer the grader should look for.`,
     S.obj(
-      { narrative: S.str, question: S.str, expectedConcept: S.str, difficulty: S.str },
-      ['narrative', 'question', 'expectedConcept'],
+      { guidance: S.str, question: S.str, expectedConcept: S.str, difficulty: S.str },
+      ['guidance', 'question', 'expectedConcept'],
     ),
   )
   const o = parseModelJson(text)
   return {
     kind: 'enemy_question',
-    narrative: String(o.narrative ?? ''),
+    guidance: String(o.guidance ?? ''),
     question: String(o.question ?? ''),
     expectedConcept: String(o.expectedConcept ?? ''),
     difficulty: c.difficulty ?? 'medium',
@@ -324,33 +323,23 @@ Return JSON with these fields kept strictly separate:
   }
 }
 
-const BOSS_PHASE_BRIEF: Record<NonNullable<Ctx['bossPhase']>, string> = {
-  solve: 'A multi-step problem on the topic that requires genuine method, not a one-liner.',
-  twist:
-    'Assume the student already solved a base problem. Now change one condition (e.g. "what if x is negative?", "what if the coefficient were 0?") and ask them to work through the consequence.',
-  explain:
-    'Ask the student to explain WHY a particular method or result works — testing conceptual understanding, not computation.',
-}
-
 async function handleBossChallenge(c: Ctx) {
-  const phase = c.bossPhase ?? 'solve'
   const text = await gemini(
-    `${PREAMBLE(c)}\nYou are the boss of the ${c.subject} world, testing mastery.`,
-    `Boss trial phase: ${phase}. ${BOSS_PHASE_BRIEF[phase]}
+    `${PREAMBLE(c)}\nYou are testing the student's overall mastery of ${c.topic}, harder than a normal practice question.`,
+    `Create ONE demanding question that requires genuine multi-step method AND asks the student to briefly justify why their approach works — this is a mastery check for the whole topic, not a one-liner.
 Return JSON with these fields kept strictly separate:
-- "narrative": ONE short sentence of boss-fight flavour for this trial. No part of the problem here.
-- "question": the actual trial problem, self-contained, NO solution and NO story wording.
-- "expectedConcept": one sentence the grader uses.`,
+- "guidance": ONE short sentence orienting the student on the overall approach before they attempt it. Plain and direct — no story wording.
+- "question": the actual mastery question, self-contained, NO solution and NO story wording.
+- "expectedConcept": one sentence the grader uses, covering both the correct method and the reasoning expected.`,
     S.obj(
-      { narrative: S.str, question: S.str, expectedConcept: S.str },
-      ['narrative', 'question', 'expectedConcept'],
+      { guidance: S.str, question: S.str, expectedConcept: S.str },
+      ['guidance', 'question', 'expectedConcept'],
     ),
   )
   const o = parseModelJson(text)
   return {
     kind: 'boss_challenge',
-    phase,
-    narrative: String(o.narrative ?? ''),
+    guidance: String(o.guidance ?? ''),
     question: String(o.question ?? ''),
     expectedConcept: String(o.expectedConcept ?? ''),
   }
@@ -358,15 +347,11 @@ Return JSON with these fields kept strictly separate:
 
 async function handleGrade(c: Ctx, boss: boolean) {
   const strictness = boss
-    ? 'Grade strictly — this is a mastery trial. Weak or hand-wavy reasoning is not "correct".'
-    : 'Grade fairly for a practice battle.'
-  const phaseNote =
-    boss && c.bossPhase === 'explain'
-      ? 'This phase is about explanation quality: reward a clear, correct "why", penalise restating the steps without reasoning.'
-      : ''
+    ? 'Grade strictly — this is a mastery check. Weak or hand-wavy reasoning is not "correct"; the student must show both the correct method and explain why it works.'
+    : 'Grade fairly for a practice question.'
 
   const text = await gemini(
-    `${PREAMBLE(c)}\nYou are grading the student's answer for the game engine. ${strictness} ${phaseNote}`,
+    `${PREAMBLE(c)}\nYou are grading the student's answer for the game engine. ${strictness}`,
     `Question:\n${c.question ?? ''}
 
 What a correct answer needs (expectedConcept):

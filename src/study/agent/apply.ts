@@ -157,13 +157,13 @@ export async function applyChanges(
               level: context.student_model.level,
               difficulty,
             })) as {
-              narrative?: string
+              guidance?: string
               question?: string
               expectedConcept?: string
             }
             if (q?.question) {
               items.push({
-                narrative: q.narrative ?? '',
+                guidance: q.guidance ?? '',
                 question: q.question,
                 expectedConcept: q.expectedConcept ?? '',
                 difficulty,

@@ -29,14 +29,6 @@ export function levelProgress(xp: number): { level: number; into: number; span: 
   return { level, into, span, pct: Math.round((into / span) * 100) }
 }
 
-const TIER_DAMAGE: Record<EnemyTier, number> = {
-  trivial: 14,
-  easy: 20,
-  medium: 26,
-  hard: 32,
-  boss: 30,
-}
-
 const TIER_XP: Record<EnemyTier, number> = {
   trivial: 40,
   easy: 70,
@@ -45,43 +37,9 @@ const TIER_XP: Record<EnemyTier, number> = {
   boss: 300,
 }
 
-/** Damage the player deals to an enemy for a graded answer. */
-export function playerDamage(tier: EnemyTier, graded: GradedAnswer): number {
-  if (!graded.correct) return 0
-  const base = TIER_DAMAGE[tier]
-  // quality scales a correct hit between 60% and 130% (crit).
-  const mult = 0.6 + graded.quality * 0.7
-  return Math.round(base * mult)
-}
-
-/** Damage the enemy deals back to the player on a wrong / weak answer. */
-export function enemyDamage(tier: EnemyTier, graded: GradedAnswer): number {
-  if (graded.correct && graded.quality >= 0.5) return 0
-  const base = TIER_DAMAGE[tier]
-  // A fully wrong answer stings; a shaky-but-right answer just grazes.
-  const severity = graded.correct ? 0.35 : 1
-  return Math.round(base * severity)
-}
-
 export function xpReward(tier: EnemyTier, graded: GradedAnswer): number {
   if (!graded.correct) return Math.round(TIER_XP[tier] * 0.1)
   return Math.round(TIER_XP[tier] * (0.5 + graded.quality * 0.5))
-}
-
-export function isCrit(tier: EnemyTier, graded: GradedAnswer): boolean {
-  return graded.correct && graded.quality >= 0.85 && tier !== 'boss'
-}
-
-export const PLAYER_MAX_HP = 100
-
-/** Boss depletes across its 3 trials; regular nodes are one decisive hit,
- *  snapped to 0 on victory — this just gives that hit visual weight. */
-export const ENEMY_MAX_HP: Record<EnemyTier, number> = {
-  trivial: 40,
-  easy: 60,
-  medium: 80,
-  hard: 100,
-  boss: 120,
 }
 
 export type SkillRank = 'Locked' | 'Novice' | 'Developing' | 'Skilled' | 'Mastered'

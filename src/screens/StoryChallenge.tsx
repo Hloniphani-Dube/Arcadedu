@@ -164,7 +164,7 @@ export function StoryChallenge() {
 
             {phase === 'answering' && (
               <motion.div key="a" initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className="mt-4">
-                <QuestionCard narrative={narrative} question={question} />
+                <QuestionCard kind="story" lead={narrative} question={question} />
                 <textarea
                   value={answer}
                   onChange={(e) => setAnswer(e.target.value)}

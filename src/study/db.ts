@@ -597,7 +597,7 @@ export async function prepareSession(
         difficulty,
       })
       items.push({
-        narrative: q.narrative,
+        guidance: q.guidance,
         question: q.question,
         expectedConcept: q.expectedConcept,
         difficulty,

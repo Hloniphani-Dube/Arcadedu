@@ -48,7 +48,7 @@ export function MissionSession() {
   const [error, setError] = useState<string | null>(null)
 
   const [idx, setIdx] = useState(0)
-  const [narrative, setNarrative] = useState('')
+  const [guidance, setGuidance] = useState('')
   const [question, setQuestion] = useState('')
   const [expectedConcept, setExpectedConcept] = useState('')
   const [answer, setAnswer] = useState('')
@@ -115,7 +115,7 @@ export function MissionSession() {
     setError(null)
     setAnswer('')
     setFeedback(null)
-    setNarrative('')
+    setGuidance('')
     try {
       // Scaffolding first when the topic is on a harder strategy level.
       for (const action of STRATEGY_PLAN[strategy].scaffold) {
@@ -136,7 +136,7 @@ export function MissionSession() {
           level,
           difficulty,
         }))
-      setNarrative(q.narrative)
+      setGuidance(q.guidance)
       setQuestion(q.question)
       setExpectedConcept(q.expectedConcept)
       setPhase('answering')
@@ -301,7 +301,7 @@ export function MissionSession() {
               animate={{ opacity: 1, y: 0 }}
               className="mt-2"
             >
-              <QuestionCard narrative={narrative} question={question} />
+              <QuestionCard lead={guidance} question={question} />
               <textarea
                 value={answer}
                 onChange={(e) => setAnswer(e.target.value)}

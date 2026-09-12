@@ -168,7 +168,7 @@ export type MissionArtifactKind =
 export type MissionArtifactStatus = 'preparing' | 'ready' | 'draft' | 'archived'
 
 export interface PreparedItem {
-  narrative: string
+  guidance: string
   question: string
   expectedConcept: string
   difficulty: string

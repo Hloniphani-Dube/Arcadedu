@@ -19,7 +19,7 @@ The codebase has two layers:
 
 | Layer | What it is | Where |
 | --- | --- | --- |
-| **The learning game** | Atlas of subjects → topics → Candy-Crush node paths of AI‑generated challenges, a Story mode, a closed-action Study Hall, a deterministic RPG engine. | `src/game/`, `src/screens/`, `api/ai.ts` |
+| **The learning game** | Atlas of subjects → topics → Candy-Crush node paths of AI‑generated challenges, a Story mode, a closed-action Study Hall, a deterministic progression engine. | `src/game/`, `src/screens/`, `api/ai.ts` |
 | **The Autonomous Study Agent** | Study Missions with a diagnostic, a deterministic mastery + plan-confidence engine, an **academic calendar** and **recurring routines**, a Strands agent that proposes plan changes, and a deterministic gate that validates and applies them. Everything routine surfaces in one **Inbox**; the agent only interrupts for a real decision. | `src/study/`, `api/agent/`, migrations `0002` + `0003` |
 
 ---
@@ -115,18 +115,23 @@ levels within a chapter are sequential.
 
 ### The Challenge loop — [src/screens/Challenge.tsx](src/screens/Challenge.tsx)
 
-1. `generateEnemyQuestion` (or `generateBossChallenge` for a boss node) →
-   `{ narrative, question, expectedConcept, difficulty }`. The **narrative**
-   (story flavour) is kept strictly apart from the **question** (the bare
-   problem) — [QuestionCard](src/components/QuestionCard.tsx) renders them
-   separately and only `question` is ever sent to the grader.
+1. `generateEnemyQuestion` (or `generateBossChallenge` for a boss node — one
+   harder, single question testing the whole topic, not a multi-phase fight) →
+   `{ guidance, question, expectedConcept, difficulty }`. The **guidance** (a
+   short, direct pointer to the method — no story framing) is kept strictly
+   apart from the **question** (the bare problem) —
+   [QuestionCard](src/components/QuestionCard.tsx) renders them separately and
+   only `question` is ever sent to the grader. Story Mode is the only place
+   that still uses narrative flavour (`generate_story_question`, unchanged).
 2. Student types an answer. Optional help: **Hint** (`hint`) or, after a wrong
    answer, **Explain my mistake** (`explain_mistake`) — both closed actions.
 3. `gradeBattleAnswer` / `gradeBossAnswer` → `{ correct, quality, feedback }`.
 4. The deterministic engine ([src/game/engine.ts](src/game/engine.ts)) turns
-   `{ correct, quality, tier }` into XP, damage, crits. `addXp` and
-   `completeNode` update the Zustand store and fire-and-forget upserts to Supabase.
-5. Boss nodes run a **three-phase mastery trial**: `solve → twist → explain`.
+   `{ correct, quality, tier }` into XP. `addXp` and `completeNode` update the
+   Zustand store and fire-and-forget upserts to Supabase.
+
+There's no HP/battle framing or enemy imagery in the Atlas challenge screen —
+that's what Story Mode still carries (see below).
 
 ## The deterministic game engine — [src/game/engine.ts](src/game/engine.ts)
 
@@ -134,9 +139,7 @@ Pure functions. The AI decides `correct` / `quality` **only**; the engine owns
 every number the player sees:
 
 - `xpForLevel` / `levelForXp` / `levelProgress` — a gentle quadratic XP curve.
-- `playerDamage(tier, graded)` — `quality` scales a correct hit 60 %–130 % (crit).
-- `enemyDamage(tier, graded)` — wrong or shaky answers cost HP.
-- `xpReward(tier, graded)`, `isCrit(...)`, `skillRank(clears)`.
+- `xpReward(tier, graded)`, `skillRank(clears)`.
 
 The model never sees or sets an XP number. This same "AI judges, deterministic
 code computes" split is the backbone of the Study Agent.
@@ -148,7 +151,7 @@ time out on "thinking" calls). It is the **only** place the Gemini key lives and
 the **only** AI channel for the whole game. The browser sends:
 
 ```jsonc
-{ "action": "<one of a closed enum>", "context": { subject, topic, level, problem?, studentAnswer?, question?, expectedConcept?, difficulty?, bossPhase?, chapter? } }
+{ "action": "<one of a closed enum>", "context": { subject, topic, level, problem?, studentAnswer?, question?, expectedConcept?, difficulty?, chapter? } }
 ```
 
 There is **no raw prompt field.**
@@ -157,9 +160,11 @@ There is **no raw prompt field.**
 `explain` · `summarize` · `hint` · `understand` · `steps` · `check_answer` ·
 `explain_mistake` · `example` · `simplify` · `similar_problem`
 
-**Battle actions** (Gemini structured-output JSON the engine consumes):
+**Challenge actions** (Gemini structured-output JSON the engine consumes):
 `generate_enemy_question` · `grade_battle_answer` · `generate_boss_challenge` ·
-`grade_boss_answer` · `generate_story_question`
+`grade_boss_answer` · `generate_story_question` (the last one is Story Mode's
+own narrator persona — the others return `guidance`, a plain instructional
+lead-in, not story flavour)
 
 Each action maps to a system instruction with explicit guardrails in the
 `LEARN_RULES` / handler registry — e.g. `hint` → *"exactly ONE nudge, never the
@@ -721,7 +726,7 @@ the original Edge Function AI backend, superseded by `/api/ai`.
 ### A. Playing a Challenge node
 
 `LevelPath` → `Challenge` mounts → `generateEnemyQuestion({subject, topic, level, difficulty: node.tier})`
-→ student answers → `gradeBattleAnswer(...)` → `{correct, quality}` → `engine.playerDamage/xpReward`
+→ student answers → `gradeBattleAnswer(...)` → `{correct, quality}` → `engine.xpReward`
 → `addXp` + `completeNode` update Zustand → `persistProfile` / `persistTopic` upsert to Supabase (RLS).
 
 ### B. Creating a mission

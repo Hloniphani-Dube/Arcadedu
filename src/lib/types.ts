@@ -40,14 +40,12 @@ export interface AiRequestContext {
   problem?: string
   /** The student's own work / attempt. */
   studentAnswer?: string
-  /** Battle: the question the enemy asked. */
+  /** The question posed to the student. */
   question?: string
-  /** Battle: expected concept, passed back for grading. */
+  /** Expected concept, passed back for grading. */
   expectedConcept?: string
-  /** Difficulty tier for enemy generation. */
+  /** Difficulty tier for question generation. */
   difficulty?: EnemyTier
-  /** Boss: which phase of the multi-part challenge. */
-  bossPhase?: 'solve' | 'twist' | 'explain'
   /** Story Mode: the chapter's title/theme, used to flavour the brain-teaser. */
   chapter?: string
 
@@ -82,8 +80,8 @@ export interface AiTextResponse {
 
 export interface EnemyQuestion {
   kind: 'enemy_question'
-  /** Story flavour that sets the scene — kept apart from the problem itself. */
-  narrative: string
+  /** A short, direct pointer to the concept/method to use — kept apart from the problem itself. */
+  guidance: string
   question: string
   expectedConcept: string
   difficulty: EnemyTier
@@ -107,9 +105,8 @@ export interface GradedAnswer {
 
 export interface BossChallenge {
   kind: 'boss_challenge'
-  phase: 'solve' | 'twist' | 'explain'
-  /** Story flavour for the trial — kept apart from the problem itself. */
-  narrative: string
+  /** A short, direct pointer to the overall approach — kept apart from the problem itself. */
+  guidance: string
   question: string
   expectedConcept: string
 }
@@ -149,23 +146,3 @@ export type AiResponse =
   | WeekMap
 
 export type EnemyTier = 'trivial' | 'easy' | 'medium' | 'hard' | 'boss'
-
-export interface EnemyDef {
-  id: string
-  name: string
-  glyph: string
-  tier: EnemyTier
-  maxHp: number
-  /** Flavor line shown when the enemy appears. */
-  taunt: string
-}
-
-export interface WorldDef {
-  id: string
-  name: string
-  glyph: string
-  subject: string
-  topic: string
-  blurb: string
-  ladder: EnemyDef[]
-}

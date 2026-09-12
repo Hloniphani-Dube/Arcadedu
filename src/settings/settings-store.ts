@@ -2,7 +2,7 @@ import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 
 interface SettingsState {
-  /** Enemy portraits + HP bars during battles. Off = text-only battles. */
+  /** Portrait images in Story Mode. Off = text-only stops. */
   showRpgHud: boolean
   setShowRpgHud: (show: boolean) => void
 }

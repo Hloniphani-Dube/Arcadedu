@@ -1,42 +1,52 @@
 import { useState } from 'react'
-import { BookOpen, ChevronDown, ChevronRight } from 'lucide-react'
+import { BookOpen, ChevronDown, ChevronRight, Compass } from 'lucide-react'
+
+const LABEL = {
+  story: { text: 'Story', icon: BookOpen },
+  guide: { text: 'How to approach it', icon: Compass },
+}
 
 /**
- * Shows an AI challenge with the story flavour kept separate from the problem.
- * The narrative sits in its own collapsible block above a clearly-labelled
- * Question block — readers who want the tale get it, readers who don't can
- * collapse it and go straight to what they must answer.
+ * Shows an AI challenge with its lead-in kept separate from the problem.
+ * In "story" mode (Story Mode only) the lead-in is narrative flavour; in
+ * "guide" mode (everywhere else) it's a short, direct pointer to the method —
+ * readers get oriented, then see clearly what they must answer.
  */
 export function QuestionCard({
-  narrative,
+  kind = 'guide',
+  lead,
   question,
 }: {
-  narrative?: string
+  kind?: 'story' | 'guide'
+  lead?: string
   question: string
 }) {
-  const [openStory, setOpenStory] = useState(true)
+  const [open, setOpen] = useState(true)
+  const { text, icon: Icon } = LABEL[kind]
 
   return (
     <div className="mt-4 space-y-2">
-      {narrative?.trim() && (
+      {lead?.trim() && (
         <div className="rounded-xl border border-edge bg-panel-2/50 p-3">
           <button
             type="button"
-            onClick={() => setOpenStory((v) => !v)}
+            onClick={() => setOpen((v) => !v)}
             className="flex items-center gap-1 text-[11px] font-semibold uppercase tracking-wide text-mana-bright"
-            aria-expanded={openStory}
+            aria-expanded={open}
           >
-            <BookOpen className="h-3.5 w-3.5" />
-            Story
-            {openStory ? (
+            <Icon className="h-3.5 w-3.5" />
+            {text}
+            {open ? (
               <ChevronDown className="h-3.5 w-3.5" />
             ) : (
               <ChevronRight className="h-3.5 w-3.5" />
             )}
           </button>
-          {openStory && (
-            <p className="mt-1.5 whitespace-pre-wrap text-sm italic leading-relaxed text-muted">
-              {narrative}
+          {open && (
+            <p
+              className={`mt-1.5 whitespace-pre-wrap text-sm leading-relaxed text-muted ${kind === 'story' ? 'italic' : ''}`}
+            >
+              {lead}
             </p>
           )}
         </div>

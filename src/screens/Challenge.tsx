@@ -11,14 +11,7 @@ import {
   AiError,
 } from '../lib/ai'
 import type { GradedAnswer } from '../lib/types'
-import {
-  xpReward,
-  isCrit,
-  playerDamage,
-  enemyDamage,
-  PLAYER_MAX_HP,
-  ENEMY_MAX_HP,
-} from '../game/engine'
+import { xpReward } from '../game/engine'
 import { getSubject, getTopic, getNode } from '../game/atlas'
 import {
   useApp,
@@ -26,13 +19,10 @@ import {
   selectNodeUnlocked,
   selectSubjectProgress,
 } from '../store'
-import { useSettings } from '../settings/settings-store'
 import { AriaSpeech, type AriaLine } from '../components/AriaSpeech'
 import { QuestionCard } from '../components/QuestionCard'
-import { EnemyPortrait } from '../components/EnemyPortrait'
-import { Btn, Panel, Spinner, Bar } from '../components/ui'
+import { Btn, Panel, Spinner } from '../components/ui'
 
-const BOSS_TRIALS = ['solve', 'twist', 'explain'] as const
 type Phase = 'loading' | 'answering' | 'result' | 'complete'
 
 let seq = 0
@@ -51,14 +41,9 @@ export function Challenge() {
   const topic = getTopic(subjectId, topicId)
   const node = getNode(subjectId, topicId, nodeId)
   const isBoss = node?.kind === 'boss'
-  const showRpgHud = useSettings((s) => s.showRpgHud)
 
   const [phase, setPhase] = useState<Phase>('loading')
-  const [playerHp, setPlayerHp] = useState(PLAYER_MAX_HP)
-  const [enemyHp, setEnemyHp] = useState(() => ENEMY_MAX_HP[isBoss ? 'boss' : (node?.tier ?? 'trivial')])
-  const [trial, setTrial] = useState(0)
-  const [pendingTrial, setPendingTrial] = useState(0)
-  const [narrative, setNarrative] = useState('')
+  const [guidance, setGuidance] = useState('')
   const [question, setQuestion] = useState('')
   const [expectedConcept, setExpectedConcept] = useState('')
   const [answer, setAnswer] = useState('')
@@ -73,23 +58,23 @@ export function Challenge() {
   const pushLine = (prompt: string, text: string) =>
     setLines((p) => [...p, { id: `c${++seq}`, prompt, text }])
 
-  async function loadQuestion(whichTrial: number) {
+  async function loadQuestion() {
     if (!subject || !topic || !node) return
     setPhase('loading')
     setError(null)
     setAnswer('')
     setGrade(null)
-    setNarrative('')
+    setGuidance('')
     const ctx = { subject: subject.name, topic: topic.name, level }
     try {
       if (node.kind === 'boss') {
-        const c = await generateBossChallenge({ ...ctx, bossPhase: BOSS_TRIALS[whichTrial] })
-        setNarrative(c.narrative)
+        const c = await generateBossChallenge(ctx)
+        setGuidance(c.guidance)
         setQuestion(c.question)
         setExpectedConcept(c.expectedConcept)
       } else {
         const q = await generateEnemyQuestion({ ...ctx, difficulty: node.tier })
-        setNarrative(q.narrative)
+        setGuidance(q.guidance)
         setQuestion(q.question)
         setExpectedConcept(q.expectedConcept)
       }
@@ -103,7 +88,7 @@ export function Challenge() {
   useEffect(() => {
     if (started.current || !node) return
     started.current = true
-    void loadQuestion(0)
+    void loadQuestion()
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [node])
 
@@ -127,7 +112,6 @@ export function Challenge() {
             question,
             expectedConcept,
             studentAnswer: answer.trim(),
-            bossPhase: BOSS_TRIALS[trial],
           })
         : await gradeBattleAnswer({
             subject: subject.name,
@@ -140,35 +124,15 @@ export function Challenge() {
       setGrade(g)
       pushLine(g.correct ? 'Result' : 'Not quite', g.feedback)
 
-      const tierForDmg = isBoss ? 'boss' : node.tier
-      const dmgToEnemy = playerDamage(tierForDmg, g)
-      const dmgToPlayer = enemyDamage(tierForDmg, g)
-      if (dmgToEnemy) setEnemyHp((hp) => Math.max(0, hp - dmgToEnemy))
-      if (dmgToPlayer) setPlayerHp((hp) => Math.max(0, hp - dmgToPlayer))
-
       const passed = g.correct && g.quality >= (isBoss ? 0.5 : 0.4)
       if (!passed) {
-        setPendingTrial(trial) // retry same trial / regenerate
         setPhase('result')
         return
       }
 
       const gained = xpReward(isBoss ? 'boss' : node.tier, g)
-
-      if (isBoss && trial < BOSS_TRIALS.length - 1) {
-        const partial = Math.round(gained * 0.4)
-        addXp(partial)
-        setXpGained((x) => x + partial)
-        setTrial(trial + 1)
-        setPendingTrial(trial + 1)
-        setPhase('result')
-        return
-      }
-
-      // whole node cleared
       addXp(gained)
       setXpGained((x) => x + gained)
-      setEnemyHp(0)
       completeNode(subject.id, topic.id, node.id)
       if (selectSubjectProgress(useApp.getState(), subject.id) >= 1) {
         recordClear(subject.id)
@@ -200,8 +164,6 @@ export function Challenge() {
     }
   }
 
-  const bossAdvanced = !!grade && grade.correct && grade.quality >= 0.5 && isBoss
-
   return (
     <div className="mx-auto grid max-w-5xl gap-4 lg:grid-cols-[1.1fr_1fr]">
       <div className="flex flex-col gap-4">
@@ -221,38 +183,25 @@ export function Challenge() {
               {isBoss ? (
                 <>
                   <Crown className="h-3.5 w-3.5 text-xp" />
-                  Boss · trial {Math.min(trial + 1, BOSS_TRIALS.length)}/{BOSS_TRIALS.length} ·{' '}
-                  {BOSS_TRIALS[trial]}
+                  Mastery challenge
                 </>
               ) : (
                 <span className="capitalize">{node.tier}</span>
               )}
             </span>
           </div>
-          {showRpgHud && (
-            <div className="mt-3 grid grid-cols-2 gap-3">
-              <Bar value={playerHp} max={PLAYER_MAX_HP} tone="heal" label="You" />
-              <Bar
-                value={enemyHp}
-                max={ENEMY_MAX_HP[isBoss ? 'boss' : node.tier]}
-                tone="hp"
-                label="Enemy"
-              />
-            </div>
-          )}
-          <EnemyPortrait tier={node.tier} seed={node.id} className="mx-auto mb-3 mt-3 h-24 w-24" />
-          <h1 className="mt-1 text-lg font-bold">{node.title}</h1>
+          <h1 className="mt-2 text-lg font-bold">{node.title}</h1>
 
           <AnimatePresence mode="wait">
             {phase === 'loading' && (
               <motion.div key="l" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="mt-4">
-                <Spinner label="The challenge forms…" />
+                <Spinner label="Preparing the challenge…" />
               </motion.div>
             )}
 
             {phase === 'answering' && (
               <motion.div key="a" initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className="mt-4">
-                <QuestionCard narrative={narrative} question={question} />
+                <QuestionCard lead={guidance} question={question} />
                 <textarea
                   value={answer}
                   onChange={(e) => setAnswer(e.target.value)}
@@ -262,7 +211,7 @@ export function Challenge() {
                 />
                 <div className="mt-3 flex flex-wrap gap-2">
                   <Btn variant="primary" onClick={submit} disabled={busy || !answer.trim()}>
-                    {busy ? 'Checking…' : isBoss ? 'Answer the trial' : 'Submit'}
+                    {busy ? 'Checking…' : 'Submit'}
                   </Btn>
                   <Btn onClick={() => assist('hint')} disabled={assisting || busy}>
                     <span className="flex items-center gap-1.5">
@@ -283,19 +232,11 @@ export function Challenge() {
             {phase === 'result' && grade && (
               <motion.div key="r" initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className="mt-4">
                 <div className={`text-sm font-bold ${grade.correct ? 'text-heal' : 'text-hp'}`}>
-                  {grade.correct
-                    ? isCrit(node.tier, grade)
-                      ? 'Cleanly done.'
-                      : 'That holds up.'
-                    : 'Not there yet.'}
+                  {grade.correct ? 'Close, but not quite enough.' : 'Not there yet.'}
                 </div>
-                <p className="mt-1 text-sm text-muted">
-                  {bossAdvanced
-                    ? 'The trial accepts your reasoning — the next one begins.'
-                    : 'Read ARIA’s note, then try again.'}
-                </p>
-                <Btn variant="primary" className="mt-3" onClick={() => loadQuestion(pendingTrial)}>
-                  {bossAdvanced ? 'Next trial' : 'Try again'}
+                <p className="mt-1 text-sm text-muted">Read ARIA’s note, then try again.</p>
+                <Btn variant="primary" className="mt-3" onClick={() => loadQuestion()}>
+                  Try again
                 </Btn>
               </motion.div>
             )}
@@ -304,7 +245,7 @@ export function Challenge() {
               <motion.div key="c" initial={{ opacity: 0, scale: 0.96 }} animate={{ opacity: 1, scale: 1 }} className="mt-4 text-center">
                 <Trophy className="mx-auto h-9 w-9 text-xp" />
                 <div className="mt-2 font-bold text-xp">
-                  {isBoss ? `${node.title} defeated` : 'Challenge cleared'}
+                  {isBoss ? `${node.title} mastered` : 'Challenge cleared'}
                 </div>
                 <p className="mt-1 text-sm text-muted">+{xpGained} XP · you explained why it works.</p>
                 <div className="mt-3 flex justify-center gap-2">

@@ -36,7 +36,7 @@ export function MissionDiagnostic() {
   const [error, setError] = useState<string | null>(null)
 
   const [qi, setQi] = useState(0)
-  const [narrative, setNarrative] = useState('')
+  const [guidance, setGuidance] = useState('')
   const [question, setQuestion] = useState('')
   const [expectedConcept, setExpectedConcept] = useState('')
   const [answer, setAnswer] = useState('')
@@ -96,7 +96,7 @@ export function MissionDiagnostic() {
     setError(null)
     setAnswer('')
     setFeedback(null)
-    setNarrative('')
+    setGuidance('')
     try {
       const q = await generateEnemyQuestion({
         subject: subject.name,
@@ -104,7 +104,7 @@ export function MissionDiagnostic() {
         level,
         difficulty: 'easy',
       })
-      setNarrative(q.narrative)
+      setGuidance(q.guidance)
       setQuestion(q.question)
       setExpectedConcept(q.expectedConcept)
       setPhase('answering')
@@ -241,7 +241,7 @@ export function MissionDiagnostic() {
 
         {(phase === 'answering' || phase === 'checked') && (
           <motion.div initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }}>
-            <QuestionCard narrative={narrative} question={question} />
+            <QuestionCard lead={guidance} question={question} />
 
             <textarea
               value={answer}

@@ -1,4 +1,4 @@
-import { Settings as SettingsIcon, Swords } from 'lucide-react'
+import { Settings as SettingsIcon, ImageIcon } from 'lucide-react'
 import { PageHeader, Panel, SectionTitle } from '../components/ui'
 import { SkinMenu } from '../components/ui/skin-menu'
 import { ColorThemeMenu } from '../components/ui/color-theme-menu'
@@ -57,12 +57,12 @@ export function Settings() {
       <Panel className="p-4">
         <div className="flex items-center gap-3">
           <span className="grid h-9 w-9 flex-shrink-0 place-items-center border border-edge bg-panel-2 text-mana-bright">
-            <Swords className="h-4 w-4" />
+            <ImageIcon className="h-4 w-4" />
           </span>
           <div className="min-w-0 flex-1">
-            <div className="text-sm font-semibold">RPG environment</div>
+            <div className="text-sm font-semibold">Story Mode portraits</div>
             <div className="text-xs text-muted">
-              Show enemy portraits and HP bars during battles.
+              Show a portrait image for each Story Mode stop.
             </div>
           </div>
           <div className="flex items-center gap-2">
@@ -74,7 +74,7 @@ export function Settings() {
             <Switch
               checked={showRpgHud}
               onChange={setShowRpgHud}
-              label="Show RPG environment"
+              label="Show Story Mode portraits"
             />
           </div>
         </div>
