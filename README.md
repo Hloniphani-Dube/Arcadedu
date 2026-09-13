@@ -123,7 +123,7 @@ sequenceDiagram
 
     UI->>AI: generate_enemy_question(subject, topic, tier)
     AI-->>UI: { guidance, question, expectedConcept }
-    Note over UI: QuestionCard renders guidance and question<br/>separately; only "question" is ever graded
+    Note over UI: guidance and question render separately, only question is graded
     S->>UI: types an answer
     UI->>AI: grade_battle_answer(question, answer)
     AI-->>UI: { correct, quality, feedback }
