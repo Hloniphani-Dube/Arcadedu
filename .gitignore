@@ -25,8 +25,18 @@ supabase/.env.local
 !.vscode/extensions.json
 .idea
 .DS_Store
+Thumbs.db
 *.suo
 *.ntvs*
 *.njsproj
 *.sln
 *.sw?
+
+# Vercel
+.vercel
+
+# Python (api/agent/decide.py)
+__pycache__/
+*.pyc
+.venv
+venv/

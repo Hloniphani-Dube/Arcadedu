@@ -1,0 +1,95 @@
+1
+00:00:00,000 --> 00:00:02,345
+Arcadedu is an adaptive learning
+
+2
+00:00:02,345 --> 00:00:05,130
+system with an autonomous study agent.
+
+3
+00:00:05,580 --> 00:00:09,527
+Studying isn't just about generating more questions.
+
+4
+00:00:09,527 --> 00:00:12,943
+The hard part is deciding what to study next,
+
+5
+00:00:12,943 --> 00:00:16,890
+and how that plan should change as progress changes.
+
+6
+00:00:17,340 --> 00:00:19,743
+Every problem the student sees
+
+7
+00:00:19,743 --> 00:00:22,066
+is generated and graded live.
+
+8
+00:00:22,066 --> 00:00:24,790
+There's no authored question bank.
+
+9
+00:00:25,240 --> 00:00:27,998
+A student creates a Study Mission:
+
+10
+00:00:27,998 --> 00:00:30,432
+pick a subject and topics, set
+
+11
+00:00:30,432 --> 00:00:33,190
+an exam date and a weekly cadence.
+
+12
+00:00:33,640 --> 00:00:37,078
+A short diagnostic seeds a mastery model, and
+
+13
+00:00:37,078 --> 00:00:41,050
+a deterministic engine lays out the full study plan.
+
+14
+00:00:41,500 --> 00:00:45,674
+As sessions complete, an AI agent can propose a change
+
+15
+00:00:45,674 --> 00:00:50,080
+to that plan, but it never touches the database directly.
+
+16
+00:00:50,530 --> 00:00:52,789
+Every proposal passes through
+
+17
+00:00:52,789 --> 00:00:55,282
+a deterministic validator first.
+
+18
+00:00:55,282 --> 00:00:58,710
+If the agent is unavailable, the plan simply
+
+19
+00:00:58,710 --> 00:01:02,450
+holds, and that's logged for the student to see.
+
+20
+00:01:02,900 --> 00:01:06,869
+The Inbox is the one place the agent surfaces:
+
+21
+00:01:06,869 --> 00:01:09,889
+a digest, decisions, and reminders.
+
+22
+00:01:09,889 --> 00:01:12,650
+Never a stream of interruptions.
+
+23
+00:01:13,100 --> 00:01:15,720
+The agent manages the process.
+
+24
+00:01:15,720 --> 00:01:18,340
+The student does the learning.
