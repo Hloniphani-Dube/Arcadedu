@@ -307,7 +307,7 @@ export function MissionSession() {
                 onChange={(e) => setAnswer(e.target.value)}
                 rows={4}
                 disabled={phase === 'checked'}
-                placeholder="Your answer — show your reasoning."
+                placeholder="Your answer, show your reasoning."
                 className="mt-3 w-full resize-none rounded-xl border border-edge bg-void p-3 text-sm outline-none focus:border-mana disabled:opacity-60"
               />
               {phase === 'answering' && (

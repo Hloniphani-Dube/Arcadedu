@@ -109,7 +109,7 @@ export function StoryChapter() {
       {allDone && (
         <p className="mt-4 text-center text-sm text-heal">
           <Check className="mr-1 inline h-4 w-4" />
-          Chapter complete — the next one is open.
+          Chapter complete. The next one is open.
         </p>
       )}
     </div>

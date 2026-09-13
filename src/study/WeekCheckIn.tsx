@@ -33,7 +33,7 @@ export function WeekCheckIn({ onAdded }: { onAdded?: () => void }) {
       const r = await mapWeek({ weekText: text.trim(), today: toDayString(new Date()) })
       const events = r.events.filter((e) => DATE_RE.test(e.date) && e.title.trim())
       if (events.length === 0) {
-        setError("ARIA couldn't find a clear date in that — try adding one, e.g. \"Friday\" or a date.")
+        setError("ARIA couldn't find a clear date in that. Try adding one, e.g. \"Friday\" or a date.")
       } else {
         setProposed(events)
       }
@@ -72,7 +72,7 @@ export function WeekCheckIn({ onAdded }: { onAdded?: () => void }) {
         <span className="text-sm font-bold">What's happening this week?</span>
       </div>
       <p className="text-xs text-muted">
-        Tell ARIA about tests, deadlines, appointments or days off — she'll
+        Tell ARIA about tests, deadlines, appointments or days off and she'll
         turn them into calendar dates for you to review.
       </p>
 

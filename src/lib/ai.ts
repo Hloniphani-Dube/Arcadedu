@@ -56,7 +56,7 @@ export async function callAi(
       const res = await postWithRetry(AI_ENDPOINT, body)
       if (!res.ok) {
         if (RETRYABLE_STATUS.has(res.status)) {
-          throw new AiError('The AI is busy right now — give it a moment and try again.')
+          throw new AiError('The AI is busy right now. Give it a moment and try again.')
         }
         throw new AiError(`AI function returned ${res.status}: ${await res.text()}`)
       }

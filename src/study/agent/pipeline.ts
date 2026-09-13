@@ -231,7 +231,7 @@ export async function runTick(args: RunTickArgs): Promise<TickOutcome> {
   } catch (err) {
     const msg = err instanceof Error ? err.message.slice(0, 300) : 'decide failed'
     await finalize({ decision: null, reason: 'agent unavailable', rejected_reason: msg, confidence })
-    return { status: 'agent_unavailable', http: 503, decision: null, applied: false, rejected_reason: msg, confidence, ...empty, error: 'The study agent is unavailable — the plan is unchanged.' }
+    return { status: 'agent_unavailable', http: 503, decision: null, applied: false, rejected_reason: msg, confidence, ...empty, error: 'The study agent is unavailable. The plan is unchanged.' }
   }
 
   // --- parse against the closed contract ---
@@ -241,7 +241,7 @@ export async function runTick(args: RunTickArgs): Promise<TickOutcome> {
   } catch (err) {
     const msg = err instanceof DecisionParseError ? err.message : 'unparseable decision'
     await finalize({ decision: null, reason: 'invalid decision', rejected_reason: msg, confidence })
-    return { status: 'invalid_decision', http: 502, decision: null, applied: false, rejected_reason: msg, confidence, ...empty, error: 'The agent returned an off-contract decision — the plan is unchanged.' }
+    return { status: 'invalid_decision', http: 502, decision: null, applied: false, rejected_reason: msg, confidence, ...empty, error: 'The agent returned an off-contract decision. The plan is unchanged.' }
   }
 
   // --- deterministic gate ---

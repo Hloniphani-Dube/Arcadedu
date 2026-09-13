@@ -116,7 +116,7 @@ export const SUBJECTS: Subject[] = [
       {
         id: 'inequalities',
         name: 'Inequalities',
-        blurb: 'Same balance, but the scales can tip — mind the flip.',
+        blurb: 'Same balance, but the scales can tip. Mind the flip.',
         nodes: path('inequalities', [
           'Lesser Imp',
           'Number-Line Serpent',
@@ -164,7 +164,7 @@ export const SUBJECTS: Subject[] = [
   {
     id: 'physics',
     name: 'Physics',
-    blurb: 'Motion, force and energy — the machinery under everything.',
+    blurb: 'Motion, force and energy: the machinery under everything.',
     continent: 'Mechanica',
     center: [510, 150],
     region: blob(510, 150, 100, 11),
@@ -198,7 +198,7 @@ export const SUBJECTS: Subject[] = [
   {
     id: 'computing',
     name: 'Computing',
-    blurb: 'Think in steps a machine could follow — then reason about their cost.',
+    blurb: 'Think in steps a machine could follow, then reason about their cost.',
     continent: 'Mechanica',
     center: [545, 335],
     region: blob(545, 335, 92, 17),
@@ -232,7 +232,7 @@ export const SUBJECTS: Subject[] = [
   {
     id: 'biology',
     name: 'Biology',
-    blurb: 'Systems within systems — structure always serving function.',
+    blurb: 'Systems within systems: structure always serving function.',
     continent: 'Vitalis',
     center: [830, 195],
     region: blob(830, 195, 96, 23),

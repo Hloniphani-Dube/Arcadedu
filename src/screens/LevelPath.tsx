@@ -120,7 +120,7 @@ export function LevelPath() {
               <g
                 key={n.id}
                 role="listitem"
-                aria-label={`${n.title} — ${s}`}
+                aria-label={`${n.title}, ${s}`}
                 transform={`translate(${p.x} ${p.y})`}
                 className={clickable ? 'cursor-pointer' : ''}
                 onClick={
@@ -186,7 +186,7 @@ export function LevelPath() {
       <div className="mt-4 text-center text-sm text-muted">
         {allDone ? (
           <span className="inline-flex items-center gap-1.5 text-heal">
-            <Check className="h-4 w-4" /> Topic complete — every challenge cleared.
+            <Check className="h-4 w-4" /> Topic complete. Every challenge cleared.
           </span>
         ) : (
           <>

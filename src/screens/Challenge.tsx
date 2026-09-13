@@ -206,7 +206,7 @@ export function Challenge() {
                   value={answer}
                   onChange={(e) => setAnswer(e.target.value)}
                   rows={4}
-                  placeholder="Your answer — show your reasoning."
+                  placeholder="Your answer, show your reasoning."
                   className="mt-3 w-full resize-none rounded-xl border border-edge bg-void p-3 text-sm outline-none focus:border-mana"
                 />
                 <div className="mt-3 flex flex-wrap gap-2">

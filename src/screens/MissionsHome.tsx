@@ -75,7 +75,7 @@ export function MissionsHome() {
             </Link>
           }
         >
-          Create one from an Atlas subject — pick the topics your exam covers, set
+          Create one from an Atlas subject: pick the topics your exam covers, set
           the date, and run a short diagnostic.
         </EmptyState>
       )}

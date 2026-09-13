@@ -203,7 +203,7 @@ export function Inbox() {
                 : digest.created_at.slice(0, 10)}
             </span>
             <p className="mt-1 text-ink">
-              {digest.reason || 'Reviewed your plan — nothing needs you.'}
+              {digest.reason || 'Reviewed your plan. Nothing needs you.'}
             </p>
           </div>
         </Panel>

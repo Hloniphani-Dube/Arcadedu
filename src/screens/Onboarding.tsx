@@ -16,8 +16,8 @@ const CATALOG = SUBJECTS.map((s) => ({
   topics: s.topics.map((t) => ({ id: t.id, name: t.name })),
 }))
 
-const SAMPLE = `PHYS 201 — Mechanics & Waves
-Midterm: mechanics (kinematics, forces, momentum) — Oct 14
+const SAMPLE = `PHYS 201: Mechanics & Waves
+Midterm: mechanics (kinematics, forces, momentum), Oct 14
 Final exam: Nov 28, covers everything plus waves and oscillations`
 
 const INPUT =
@@ -50,7 +50,7 @@ export function Onboarding() {
       navigate(`/missions/${r.missionId}/diagnostic`, {
         state: {
           builtBy: 'agent',
-          summary: `Built "${r.title}" — ${r.topicCount} topic${r.topicCount === 1 ? '' : 's'}, ${r.eventCount} date${r.eventCount === 1 ? '' : 's'} added to your calendar.`,
+          summary: `Built "${r.title}": ${r.topicCount} topic${r.topicCount === 1 ? '' : 's'}, ${r.eventCount} date${r.eventCount === 1 ? '' : 's'} added to your calendar.`,
           unmapped: r.unmapped,
         },
       })
@@ -58,7 +58,7 @@ export function Onboarding() {
       setError(
         e instanceof Error
           ? e.message
-          : 'ARIA could not read that — try skipping for now and add a mission later.',
+          : 'ARIA could not read that. Try skipping for now and add a mission later.',
       )
       setBusy(false)
     }
@@ -84,7 +84,7 @@ export function Onboarding() {
                 for your week.
               </h1>
               <p className="mt-2 text-sm text-muted">
-                A name and a look — you can change these anytime.
+                A name and a look. You can change these anytime.
               </p>
             </div>
 
@@ -126,7 +126,7 @@ export function Onboarding() {
               <h1 className="title-serif">What are you preparing for?</h1>
               <p className="mt-2 text-sm text-muted">
                 Paste a syllabus, outline or assignment brief and ARIA builds
-                your first study plan. Or skip — you can do this later from
+                your first study plan. Or skip: you can do this later from
                 Missions.
               </p>
             </div>

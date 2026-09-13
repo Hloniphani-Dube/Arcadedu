@@ -66,7 +66,7 @@ export const STORY_ONE: Story = {
     chapter(
       0,
       'The Threshold Village',
-      'Every long road starts at a small gate. The village elders test travellers with the oldest riddles — the kind a child can answer and a scholar overthinks.',
+      'Every long road starts at a small gate. The village elders test travellers with the oldest riddles: the kind a child can answer and a scholar overthinks.',
       ['The First Gate', 'Counting Sheep', "The Elder's Riddle"],
     ),
     chapter(

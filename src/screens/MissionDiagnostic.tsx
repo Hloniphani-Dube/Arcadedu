@@ -208,7 +208,7 @@ export function MissionDiagnostic() {
             <p className="mt-1 text-ink">{built.summary}</p>
             {built.unmapped && built.unmapped.length > 0 && (
               <p className="mt-1 text-xs text-muted">
-                Couldn't place: {built.unmapped.join(', ')} — add these by hand
+                Couldn't place: {built.unmapped.join(', ')}. Add these by hand
                 from the Calendar if you need them.
               </p>
             )}
@@ -248,7 +248,7 @@ export function MissionDiagnostic() {
               onChange={(e) => setAnswer(e.target.value)}
               rows={4}
               disabled={phase === 'checked'}
-              placeholder="Your answer — show your reasoning."
+              placeholder="Your answer, show your reasoning."
               className="mt-3 w-full resize-none rounded-xl border border-edge bg-void p-3 text-sm outline-none focus:border-mana disabled:opacity-60"
             />
 
@@ -295,7 +295,7 @@ export function MissionDiagnostic() {
       </Panel>
 
       <p className="mt-3 text-xs text-muted">
-        The AI writes and scores these questions. It never sees a mastery number —
+        The AI writes and scores these questions. It never sees a mastery number:
         that is computed here from whether you were right and how sound your
         reasoning was.
       </p>

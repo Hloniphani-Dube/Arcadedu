@@ -178,7 +178,7 @@ export async function applyChanges(
           topic_id: s.topic_id,
           plan_session_id: s.id,
           kind: 'session_items',
-          title: `${topicName} — session ready`,
+          title: `${topicName}: session ready`,
           content: { items },
           status: items.length ? 'ready' : 'archived',
         })
@@ -200,7 +200,7 @@ export async function applyChanges(
             mission_id: missionId,
             topic_id: c.topic,
             kind: 'revision_sheet',
-            title: `${topicName} — revision sheet`,
+            title: `${topicName}: revision sheet`,
             content: { text: r.text },
             status: 'ready',
           })
@@ -227,8 +227,8 @@ export async function applyChanges(
             kind: 'message_draft',
             title:
               c.kind === 'extension_request'
-                ? 'Draft — extension request'
-                : 'Draft — tutor update',
+                ? 'Draft: extension request'
+                : 'Draft: tutor update',
             content: { subject: d.subject ?? '', body: d.body },
             status: 'draft',
           })

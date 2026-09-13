@@ -165,15 +165,15 @@ export function StudyPlan() {
     setAgentBusy(false)
     setActivityKey((k) => k + 1)
     if (!r.success) {
-      setAgentMsg(r.error ?? 'The agent could not run — the plan is unchanged.')
+      setAgentMsg(r.error ?? 'The agent could not run. The plan is unchanged.')
       return
     }
     setAgentMsg(
       r.applied
-        ? `Agent: ${r.decision} — plan updated.`
+        ? `Agent: ${r.decision}, plan updated.`
         : r.rejected_reason
           ? `Agent: ${r.decision} rejected (${r.rejected_reason}).`
-          : `Agent: ${r.decision} — no change needed.`,
+          : `Agent: ${r.decision}, no change needed.`,
     )
     await load()
   }
@@ -217,7 +217,7 @@ export function StudyPlan() {
   async function makeEmailDraft() {
     if (!snap) return
     const details = window.prompt(
-      'What should the email say? A sentence or two in your own words — the agent will phrase it, not invent anything.',
+      'What should the email say? A sentence or two in your own words. The agent will phrase it, not invent anything.',
     )
     if (!details?.trim()) return
     setWorking('email')

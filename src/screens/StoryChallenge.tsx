@@ -9,7 +9,6 @@ import { STORY_ONE, getChapter, getStoryLevel } from '../game/story'
 import { useApp, selectLevel, selectStoryLevelUnlocked } from '../store'
 import { AriaSpeech, type AriaLine } from '../components/AriaSpeech'
 import { QuestionCard } from '../components/QuestionCard'
-import { EnemyPortrait } from '../components/EnemyPortrait'
 import { Btn, Panel, Spinner } from '../components/ui'
 
 type Phase = 'loading' | 'answering' | 'result' | 'complete'
@@ -152,8 +151,7 @@ export function StoryChallenge() {
             </span>
             <span className="capitalize">{lvl.tier}</span>
           </div>
-          <EnemyPortrait tier={lvl.tier} seed={lvl.id} className="mx-auto mb-3 mt-3 h-24 w-24" />
-          <h1 className="mt-1 text-lg font-bold">{lvl.title}</h1>
+          <h1 className="mt-3 text-lg font-bold">{lvl.title}</h1>
 
           <AnimatePresence mode="wait">
             {phase === 'loading' && (
@@ -169,7 +167,7 @@ export function StoryChallenge() {
                   value={answer}
                   onChange={(e) => setAnswer(e.target.value)}
                   rows={4}
-                  placeholder="Your answer — a short reason helps."
+                  placeholder="Your answer, a short reason helps."
                   className="mt-3 w-full resize-none rounded-xl border border-edge bg-void p-3 text-sm outline-none focus:border-mana"
                 />
                 <div className="mt-3 flex flex-wrap gap-2">
@@ -213,7 +211,7 @@ export function StoryChallenge() {
                     </Btn>
                   ) : (
                     <Btn variant="primary" onClick={() => navigate('/story')}>
-                      Story’s end — back to the tale
+                      Story’s end. Back to the tale
                     </Btn>
                   )}
                   <Btn onClick={() => navigate(backToChapter)}>Back to chapter</Btn>
@@ -235,7 +233,7 @@ export function StoryChallenge() {
         <AriaSpeech
           lines={lines}
           loading={assisting}
-          emptyHint="Stuck? Ask ARIA for a nudge — she won’t just tell you the answer."
+          emptyHint="Stuck? Ask ARIA for a nudge. She won’t just tell you the answer."
         />
       </Panel>
     </div>

@@ -455,14 +455,14 @@ export async function createMissionFromSyllabus(
   const subject = input.subjectCatalog.find((s) => s.id === map.subject_id)
   if (!subject) {
     throw new StudyDbError(
-      "The agent couldn't match this to an Atlas subject — try naming the subject in the text.",
+      "The agent couldn't match this to an Atlas subject. Try naming the subject in the text.",
     )
   }
   const validTopics = new Set(subject.topics.map((t) => t.id))
   const topicIds = map.topic_ids.filter((t) => validTopics.has(t))
   if (topicIds.length === 0) {
     throw new StudyDbError(
-      "The agent couldn't match any topics — try listing the topics your exam covers.",
+      "The agent couldn't match any topics. Try listing the topics your exam covers.",
     )
   }
 
@@ -516,7 +516,7 @@ export async function createMissionFromSyllabus(
     {
       user_id: input.user_id,
       mission_id: missionId,
-      title: `${map.title || subject.name} — exam`,
+      title: `${map.title || subject.name}: exam`,
       kind: 'exam' as CalendarEventKind,
       event_date: examDate,
     },
@@ -576,7 +576,7 @@ export async function prepareSession(
   const placeholder = await createArtifact({
     mission_id: missionId,
     kind: 'session_items',
-    title: `${ctx.topicName} — session ready`,
+    title: `${ctx.topicName}: session ready`,
     content: {},
     topic_id: planSession.topic_id,
     plan_session_id: planSession.id,
@@ -644,7 +644,7 @@ export async function generateRevisionSheet(
   return createArtifact({
     mission_id: missionId,
     kind: 'revision_sheet',
-    title: `${ctx.topicName} — revision sheet`,
+    title: `${ctx.topicName}: revision sheet`,
     content: { text },
     topic_id: topicId,
     created_by: createdBy,
@@ -708,7 +708,7 @@ export async function requestProgressReport(
   return createArtifact({
     mission_id: snapshot.mission.id,
     kind: 'progress_report',
-    title: `Progress report — ${toDayString(new Date())}`,
+    title: `Progress report: ${toDayString(new Date())}`,
     content: { text },
     created_by: 'you',
   })
@@ -729,8 +729,8 @@ export async function requestMessageDraft(
     kind: 'message_draft',
     title:
       input.messageKind === 'extension_request'
-        ? 'Draft — extension request'
-        : 'Draft — tutor update',
+        ? 'Draft: extension request'
+        : 'Draft: tutor update',
     content: { subject: d.subject, body: d.body },
     status: 'draft',
     created_by: 'you',

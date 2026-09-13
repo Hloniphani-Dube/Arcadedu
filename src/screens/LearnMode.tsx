@@ -122,7 +122,7 @@ export function LearnMode() {
               hasAnswer={work.trim().length > 0}
             />
             <p className="mt-3 text-xs text-muted">
-              There is no free prompt box. ARIA will guide, hint, and check — she
+              There is no free prompt box. ARIA will guide, hint, and check, but
               won&apos;t hand you the final answer.
             </p>
           </Panel>

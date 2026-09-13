@@ -278,7 +278,7 @@ export function Calendar() {
           <input
             value={title}
             onChange={(e) => setTitle(e.target.value)}
-            placeholder="Add a date — e.g. Physics paper 2"
+            placeholder="Add a date, e.g. Physics paper 2"
             className="flex-1 rounded-lg border border-edge bg-void p-2 text-sm outline-none focus:border-mana"
           />
           <input

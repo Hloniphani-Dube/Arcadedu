@@ -91,7 +91,7 @@ export function ArtifactCard({
             </>
           )}
           {artifact.kind === 'session_items' && !preparing && (
-            <p className="mt-1 text-sm text-muted">{body} — open the session to start.</p>
+            <p className="mt-1 text-sm text-muted">{body} Open the session to start.</p>
           )}
 
           <div className="mt-3 flex flex-wrap gap-2">

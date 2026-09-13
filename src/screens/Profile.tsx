@@ -39,7 +39,7 @@ export function Profile() {
               className="w-full rounded-lg border border-edge bg-void px-3 py-2 text-sm font-semibold outline-none focus:border-mana"
             />
             <div className="mt-1 text-xs text-muted">
-              {unconfigured ? 'Local mode — progress is not saved' : (user?.email ?? 'Signed in')}
+              {unconfigured ? 'Local mode, progress is not saved' : (user?.email ?? 'Signed in')}
             </div>
           </div>
         </div>

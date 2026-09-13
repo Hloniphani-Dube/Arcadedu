@@ -56,7 +56,7 @@ export const STRATEGY_PLAN: Record<StrategyLevel, StrategyPlan> = {
     scaffold: [],
     insertPrerequisiteReview: false,
     label: 'Normal',
-    blurb: 'Straight practice — generate, answer, grade.',
+    blurb: 'Straight practice: generate, answer, grade.',
   },
   STRUGGLING: {
     scaffold: ['example', 'hint'],

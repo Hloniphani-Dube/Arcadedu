@@ -19,11 +19,11 @@ const CATALOG = SUBJECTS.map((s) => ({
   topics: s.topics.map((t) => ({ id: t.id, name: t.name })),
 }))
 
-const SAMPLE = `PHYS 201 — Mechanics & Waves
-Midterm: mechanics (kinematics, forces, momentum) — Oct 14
+const SAMPLE = `PHYS 201: Mechanics & Waves
+Midterm: mechanics (kinematics, forces, momentum), Oct 14
 Final exam: Nov 28, covers everything plus waves and oscillations
 Problem set 4 due Oct 21
-Lab report: simple harmonic motion — Nov 4`
+Lab report: simple harmonic motion, Nov 4`
 
 export function MissionCreate() {
   const { user, unconfigured } = useAuth()
@@ -73,7 +73,7 @@ export function MissionCreate() {
       navigate(`/missions/${r.missionId}/diagnostic`, {
         state: {
           builtBy: 'agent',
-          summary: `Built "${r.title}" — ${r.topicCount} topic${r.topicCount === 1 ? '' : 's'}, ${r.eventCount} date${r.eventCount === 1 ? '' : 's'} added to your calendar.`,
+          summary: `Built "${r.title}": ${r.topicCount} topic${r.topicCount === 1 ? '' : 's'}, ${r.eventCount} date${r.eventCount === 1 ? '' : 's'} added to your calendar.`,
           unmapped: r.unmapped,
         },
       })
@@ -81,7 +81,7 @@ export function MissionCreate() {
       setError(
         e instanceof Error
           ? e.message
-          : 'The agent could not read that — try “Fill it in” instead.',
+          : 'The agent could not read that. Try “Fill it in” instead.',
       )
       setAgentBusy(false)
     }
@@ -120,7 +120,7 @@ export function MissionCreate() {
 
       <h1 className="title-serif mb-2">New mission</h1>
       <p className="mb-5 max-w-prose text-sm text-muted">
-        Give the agent your syllabus and it builds the whole thing — topics,
+        Give the agent your syllabus and it builds the whole thing: topics,
         schedule, calendar dates. Or fill it in yourself.
       </p>
 

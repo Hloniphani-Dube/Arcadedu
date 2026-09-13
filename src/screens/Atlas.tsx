@@ -137,8 +137,8 @@ export function Atlas() {
             <div className="min-w-0 flex-1">
               <div className="text-sm font-bold">What's happening this week?</div>
               <div className="text-[11px] text-muted">
-                Tell ARIA about tests, deadlines or days off — she'll add them
-                to your calendar.
+                Tell ARIA about tests, deadlines or days off and she'll add
+                them to your calendar.
               </div>
             </div>
             <ChevronRight className="h-4 w-4 flex-shrink-0 text-muted" />
@@ -183,10 +183,10 @@ export function Atlas() {
         actions={
           <InfoButton
             title="How the Atlas works"
-            summary="Drag to pan, scroll to zoom — every world is open, pick any region to start."
+            summary="Drag to pan, scroll to zoom. Every world is open, pick any region to start."
           >
             <ul className="list-disc space-y-1.5 pl-4">
-              <li>Worlds and topics are never locked — jump straight to whatever you want to learn.</li>
+              <li>Worlds and topics are never locked. Jump straight to whatever you want to learn.</li>
               <li>Inside a topic, levels run in order: clear one to unlock the next, ending in a boss challenge.</li>
               <li>Outline = ready to explore, filled indigo = in progress, filled mint = completed.</li>
               <li>Hover a region to preview it before diving in.</li>
