@@ -1,7 +1,7 @@
 import { useRef, useState } from 'react'
 import { Trash2, Upload } from 'lucide-react'
 import { Btn } from './ui'
-import { AVATAR_ICONS, DEFAULT_AVATAR } from './icons'
+import { DEFAULT_AVATAR } from './icons'
 import { fileToAvatarDataUrl } from '../lib/image'
 
 export function AvatarPicker({
@@ -30,26 +30,6 @@ export function AvatarPicker({
   return (
     <div>
       <div className="flex flex-wrap items-center gap-2">
-        {Object.entries(AVATAR_ICONS).map(([key, Icon]) => {
-          const iconValue = `icon:${key}`
-          const active = value === iconValue
-          return (
-            <button
-              key={key}
-              type="button"
-              aria-label={key}
-              onClick={() => onChange(iconValue)}
-              className={`grid h-9 w-9 place-items-center rounded-lg border transition ${
-                active
-                  ? 'border-mana bg-mana/15 text-mana-bright'
-                  : 'border-edge text-muted hover:border-mana hover:text-ink'
-              }`}
-            >
-              <Icon className="h-4 w-4" />
-            </button>
-          )
-        })}
-
         <input
           ref={fileRef}
           type="file"
@@ -57,7 +37,7 @@ export function AvatarPicker({
           onChange={onFile}
           className="hidden"
         />
-        <Btn onClick={() => fileRef.current?.click()} className="ml-1">
+        <Btn onClick={() => fileRef.current?.click()}>
           <span className="flex items-center gap-1.5">
             <Upload className="h-4 w-4 opacity-70" />
             {hasPhoto ? 'Change photo' : 'Upload photo'}
