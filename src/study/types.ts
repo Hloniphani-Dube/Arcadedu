@@ -125,6 +125,7 @@ export interface CalendarEvent {
   title: string
   kind: CalendarEventKind
   event_date: string // YYYY-MM-DD
+  event_time: string | null // HH:MM, 24-hour
   notes: string | null
   completed: boolean
   created_at: string
@@ -141,6 +142,7 @@ export interface Routine {
   cadence: RoutineCadence
   weekday: number // 0 = Sunday
   anchor_date: string // YYYY-MM-DD
+  time_of_day: string | null // HH:MM, 24-hour
   active: boolean
   created_at: string
   updated_at: string
@@ -202,6 +204,7 @@ export interface Reminder {
   title: string
   detail?: string
   date: string // YYYY-MM-DD
+  time?: string | null // HH:MM, 24-hour — when the user set one
   when: 'overdue' | 'today' | 'soon'
   /** where "act on this" leads */
   ref: {

@@ -11,10 +11,54 @@ interface EventLike {
   title: string
   kind: string
   event_date: string
+  event_time?: string | null
   completed: boolean
 }
 interface EventLikeWithTopic extends EventLike {
   topic_id: string | null
+}
+
+const WEEKDAY_NAMES = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
+
+function ordinal(n: number): string {
+  if (n % 10 === 1 && n % 100 !== 11) return `${n}st`
+  if (n % 10 === 2 && n % 100 !== 12) return `${n}nd`
+  if (n % 10 === 3 && n % 100 !== 13) return `${n}rd`
+  return `${n}th`
+}
+
+/** "18:05" -> "6:05 PM". Returns '' for anything that isn't HH:MM. */
+export function formatTime(time?: string | null): string {
+  if (!time || !/^\d{2}:\d{2}$/.test(time)) return ''
+  const [h, m] = time.split(':').map(Number)
+  const period = h < 12 ? 'AM' : 'PM'
+  const h12 = h % 12 === 0 ? 12 : h % 12
+  return `${h12}:${String(m).padStart(2, '0')} ${period}`
+}
+
+/** e.g. "Every Tuesday at 6:00 PM", "Monthly on the 3rd", "Every day". */
+export function routineScheduleLabel(r: {
+  cadence: 'daily' | 'weekly' | 'biweekly' | 'monthly'
+  weekday: number
+  anchor_date: string
+  time_of_day?: string | null
+}): string {
+  let base: string
+  switch (r.cadence) {
+    case 'daily':
+      base = 'Every day'
+      break
+    case 'biweekly':
+      base = `Every other ${WEEKDAY_NAMES[r.weekday]}`
+      break
+    case 'monthly':
+      base = `Monthly on the ${ordinal(parseDay(r.anchor_date).getUTCDate())}`
+      break
+    default:
+      base = `Every ${WEEKDAY_NAMES[r.weekday]}`
+  }
+  const time = formatTime(r.time_of_day)
+  return time ? `${base} at ${time}` : base
 }
 
 // --- recurring routines ---------------------------------------------------
@@ -76,7 +120,12 @@ export interface ReminderInputs {
     scheduled_date: string
   }[]
   events: (EventLike & { id: string })[]
-  routineOccurrences: { id: string; title: string; due_date: string }[]
+  routineOccurrences: {
+    id: string
+    title: string
+    due_date: string
+    time_of_day?: string | null
+  }[]
 }
 
 const KIND_DETAIL: Record<string, string> = {
@@ -130,14 +179,20 @@ export function buildReminders(input: ReminderInputs): Reminder[] {
       title: e.title,
       detail: KIND_DETAIL[e.kind] ?? 'Calendar date',
       date: e.event_date,
+      time: e.event_time ?? null,
       when: whenFor(today, e.event_date),
       ref: { eventId: e.id },
     })
   }
 
+  // Only overdue/today occurrences show up as individual items — a recurring
+  // routine's future dates are represented once, by its schedule line, not
+  // as one reminder per upcoming date (see routineScheduleLabel).
   for (const r of input.routineOccurrences) {
+    const when = whenFor(today, r.due_date)
+    if (when === 'soon') continue
     const d = daysBetween(today, r.due_date)
-    if (d < -7 || d > 14) continue
+    if (d < -7) continue
     out.push({
       id: `routine:${r.id}`,
       source: 'routine',
@@ -145,7 +200,8 @@ export function buildReminders(input: ReminderInputs): Reminder[] {
       title: r.title,
       detail: KIND_DETAIL.routine,
       date: r.due_date,
-      when: whenFor(today, r.due_date),
+      time: r.time_of_day ?? null,
+      when,
       ref: { routineOccurrenceId: r.id },
     })
   }

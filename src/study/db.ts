@@ -827,6 +827,7 @@ export interface CalendarEventInput {
   title: string
   kind: CalendarEventKind
   event_date: string
+  event_time?: string | null
   mission_id?: string | null
   topic_id?: string | null
   notes?: string | null
@@ -860,6 +861,7 @@ export async function createCalendarEvent(
       title: input.title.trim() || 'Untitled',
       kind: input.kind,
       event_date: input.event_date,
+      event_time: input.event_time || null,
       mission_id: input.mission_id ?? null,
       topic_id: input.topic_id ?? null,
       notes: input.notes ?? null,
@@ -893,7 +895,7 @@ export async function createCalendarEvents(
 
 export async function updateCalendarEvent(
   id: string,
-  patch: Partial<Pick<CalendarEvent, 'title' | 'kind' | 'event_date' | 'notes' | 'completed' | 'mission_id' | 'topic_id'>>,
+  patch: Partial<Pick<CalendarEvent, 'title' | 'kind' | 'event_date' | 'event_time' | 'notes' | 'completed' | 'mission_id' | 'topic_id'>>,
 ): Promise<void> {
   const db = requireDb()
   const { error } = await db.from('calendar_events').update(patch).eq('id', id)
@@ -914,6 +916,7 @@ export interface RoutineInput {
   weekday: number
   /** monthly: which day-of-month to repeat on, as YYYY-MM-DD. Defaults to today. */
   anchor_date?: string
+  time_of_day?: string | null
   mission_id?: string | null
 }
 
@@ -938,6 +941,7 @@ export async function createRoutine(input: RoutineInput): Promise<Routine> {
       cadence: input.cadence,
       weekday: input.weekday,
       anchor_date: input.anchor_date ?? toDayString(new Date()),
+      time_of_day: input.time_of_day || null,
       mission_id: input.mission_id ?? null,
     })
     .select('*')
@@ -1032,6 +1036,7 @@ export interface InboxData {
   events: CalendarEvent[]
   routineOccurrences: RoutineOccurrence[]
   routineTitles: Record<string, string>
+  routines: Routine[]
   notifications: StudyNotification[]
   lastDailyDigest: { reason: string | null; created_at: string } | null
 }
@@ -1063,6 +1068,7 @@ export async function fetchInbox(userId: string): Promise<InboxData> {
     events: [],
     routineOccurrences: [],
     routineTitles: {},
+    routines: [],
     notifications: [],
     lastDailyDigest: null,
   }
@@ -1118,6 +1124,7 @@ export async function fetchInbox(userId: string): Promise<InboxData> {
     events: eventsRes,
     routineOccurrences,
     routineTitles: Object.fromEntries(routines.map((r) => [r.id, r.title])),
+    routines,
     notifications: notifsRes,
     lastDailyDigest: digest
       ? { reason: digest.reason ?? null, created_at: digest.created_at }

@@ -3,7 +3,9 @@ import assert from 'node:assert/strict'
 import {
   buildReminders,
   deadlineCrossings,
+  formatTime,
   routineOccurrenceDates,
+  routineScheduleLabel,
   routinesBehind,
   upcomingCalendar,
 } from './calendar.ts'
@@ -110,6 +112,61 @@ describe('buildReminders', () => {
     assert.deepEqual(session.ref, { missionId: 'm1', planSessionId: 's2' })
     const event = r.find((x) => x.id === 'event:e1')!
     assert.deepEqual(event.ref, { eventId: 'e1' })
+  })
+
+  it('drops future routine occurrences — only today/overdue surface as items', () => {
+    const r = buildReminders({
+      ...base,
+      routineOccurrences: [
+        { id: 'r1', title: 'Weekly problem set', due_date: '2026-09-07' }, // today
+        { id: 'r2', title: 'Weekly problem set', due_date: '2026-09-06' }, // overdue
+        { id: 'r3', title: 'Weekly problem set', due_date: '2026-09-14' }, // next week — not shown
+      ],
+    })
+    const ids = r.filter((x) => x.source === 'routine').map((x) => x.id)
+    assert.deepEqual(ids.sort(), ['routine:r1', 'routine:r2'])
+  })
+
+  it('carries the routine time-of-day onto the reminder', () => {
+    const r = buildReminders({
+      ...base,
+      routineOccurrences: [
+        { id: 'r1', title: 'Weekly problem set', due_date: '2026-09-07', time_of_day: '18:00' },
+      ],
+    })
+    assert.equal(r.find((x) => x.id === 'routine:r1')!.time, '18:00')
+  })
+})
+
+describe('formatTime', () => {
+  it('formats HH:MM as a 12-hour clock', () => {
+    assert.equal(formatTime('18:05'), '6:05 PM')
+    assert.equal(formatTime('00:00'), '12:00 AM')
+    assert.equal(formatTime('12:00'), '12:00 PM')
+    assert.equal(formatTime('09:30'), '9:30 AM')
+  })
+
+  it('returns empty for missing/invalid input', () => {
+    assert.equal(formatTime(null), '')
+    assert.equal(formatTime(undefined), '')
+    assert.equal(formatTime(''), '')
+  })
+})
+
+describe('routineScheduleLabel', () => {
+  it('describes cadence and, when set, the time', () => {
+    assert.equal(
+      routineScheduleLabel({ cadence: 'weekly', weekday: 2, anchor_date: '2026-09-01', time_of_day: '18:00' }),
+      'Every Tue at 6:00 PM',
+    )
+    assert.equal(
+      routineScheduleLabel({ cadence: 'daily', weekday: 0, anchor_date: '2026-09-01', time_of_day: null }),
+      'Every day',
+    )
+    assert.equal(
+      routineScheduleLabel({ cadence: 'monthly', weekday: 0, anchor_date: '2026-09-03' }),
+      'Monthly on the 3rd',
+    )
   })
 })
 

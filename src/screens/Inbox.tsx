@@ -25,7 +25,7 @@ import {
   updateCalendarEvent,
   type InboxData,
 } from '../study/db'
-import { buildReminders } from '../study/calendar'
+import { buildReminders, formatTime, routineScheduleLabel } from '../study/calendar'
 import { toDayString, daysBetween } from '../study/dates'
 import type { Reminder, StudyNotification } from '../study/types'
 import { NotificationCard } from '../study/NotificationCard'
@@ -128,6 +128,8 @@ export function Inbox() {
 
   const inbox = data!
   const missionById = new Map(inbox.missions.map((m) => [m.id, m]))
+  const routineById = new Map(inbox.routines.map((r) => [r.id, r]))
+  const activeRoutines = inbox.routines.filter((r) => r.active)
 
   const reminders = buildReminders({
     today,
@@ -147,8 +149,9 @@ export function Inbox() {
       .filter((o) => o.status !== 'done')
       .map((o) => ({
         id: o.id,
-        title: inbox.routineTitles[o.routine_id] ?? 'Recurring task',
+        title: routineById.get(o.routine_id)?.title ?? inbox.routineTitles[o.routine_id] ?? 'Recurring task',
         due_date: o.due_date,
+        time_of_day: routineById.get(o.routine_id)?.time_of_day,
       })),
   })
   const groups = group(reminders)
@@ -247,6 +250,20 @@ export function Inbox() {
       <section>
         <SectionTitle>On your plate</SectionTitle>
 
+        {activeRoutines.length > 0 && (
+          <div className="mb-4 flex flex-col gap-1.5">
+            {activeRoutines.map((r) => (
+              <div
+                key={r.id}
+                className="flex items-center gap-2 rounded-lg border border-hp/40 bg-hp/5 px-3 py-2 text-xs font-semibold text-hp"
+              >
+                <Repeat className="h-3.5 w-3.5 flex-shrink-0" />
+                {r.title} · {routineScheduleLabel(r)}
+              </div>
+            ))}
+          </div>
+        )}
+
         {nothing && (
           <EmptyState
             icon={<CheckCircle2 className="h-5 w-5 text-heal" />}
@@ -298,6 +315,7 @@ function ReminderGroup({
                   <div className="truncate text-sm font-semibold">{r.title}</div>
                   <div className="text-xs text-muted">
                     {r.detail} · {r.date}
+                    {r.time ? ` · ${formatTime(r.time)}` : ''}
                   </div>
                 </div>
                 {r.source === 'session' && r.ref.missionId && r.ref.planSessionId ? (

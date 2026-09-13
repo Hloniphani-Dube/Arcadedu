@@ -16,7 +16,8 @@ import {
   updateCalendarEvent,
   type CalendarSession,
 } from '../study/db'
-import { daysBetween, parseDay, toDayString } from '../study/dates'
+import { daysBetween, toDayString } from '../study/dates'
+import { formatTime, routineScheduleLabel } from '../study/calendar'
 import {
   MonthCalendar,
   type DayMarker,
@@ -54,26 +55,6 @@ function relative(today: string, date: string): string {
   return `In ${Math.round(d / 7)} weeks`
 }
 
-function ordinal(n: number): string {
-  if (n % 10 === 1 && n % 100 !== 11) return `${n}st`
-  if (n % 10 === 2 && n % 100 !== 12) return `${n}nd`
-  if (n % 10 === 3 && n % 100 !== 13) return `${n}rd`
-  return `${n}th`
-}
-
-function cadenceLabel(r: Routine): string {
-  switch (r.cadence) {
-    case 'daily':
-      return 'Every day'
-    case 'biweekly':
-      return `Every other ${WEEKDAYS[r.weekday]}`
-    case 'monthly':
-      return `Monthly on the ${ordinal(parseDay(r.anchor_date).getUTCDate())}`
-    default:
-      return `Every ${WEEKDAYS[r.weekday]}`
-  }
-}
-
 export function Calendar() {
   const { user, unconfigured } = useAuth()
   const today = toDayString(new Date())
@@ -88,12 +69,14 @@ export function Calendar() {
 
   const [title, setTitle] = useState('')
   const [kind, setKind] = useState<CalendarEventKind>('exam')
+  const [eventTime, setEventTime] = useState('09:00')
   const [busy, setBusy] = useState(false)
 
   const [rTitle, setRTitle] = useState('')
   const [rCadence, setRCadence] = useState<RoutineCadence>('weekly')
   const [rWeekday, setRWeekday] = useState(1)
   const [rAnchorDate, setRAnchorDate] = useState(today)
+  const [rTime, setRTime] = useState('09:00')
 
   const load = useCallback(async () => {
     if (!user) return
@@ -163,6 +146,7 @@ export function Calendar() {
         title,
         kind,
         event_date: onDate,
+        event_time: eventTime || null,
       })
       setTitle('')
       await load()
@@ -183,6 +167,7 @@ export function Calendar() {
         cadence: rCadence,
         weekday: rWeekday,
         anchor_date: rCadence === 'monthly' ? rAnchorDate : undefined,
+        time_of_day: rTime || null,
       })
       setRTitle('')
       await load()
@@ -268,6 +253,9 @@ export function Calendar() {
               <span className={`flex-1 truncate ${e.completed ? 'line-through' : ''}`}>
                 {e.title}
               </span>
+              {e.event_time && (
+                <span className="text-xs text-muted">{formatTime(e.event_time)}</span>
+              )}
               <button
                 onClick={() =>
                   void updateCalendarEvent(e.id, { completed: !e.completed }).then(load)
@@ -298,6 +286,13 @@ export function Calendar() {
             value={selectedDay}
             onChange={(e) => setSelectedDay(e.target.value)}
             aria-label="Date"
+            className="rounded-lg border border-edge bg-void p-2 text-sm outline-none focus:border-mana"
+          />
+          <input
+            type="time"
+            value={eventTime}
+            onChange={(e) => setEventTime(e.target.value)}
+            aria-label="Time"
             className="rounded-lg border border-edge bg-void p-2 text-sm outline-none focus:border-mana"
           />
           <select
@@ -370,6 +365,14 @@ export function Calendar() {
               className="rounded-lg border border-edge bg-void p-2 text-sm outline-none focus:border-mana"
             />
           )}
+          <input
+            type="time"
+            value={rTime}
+            onChange={(e) => setRTime(e.target.value)}
+            aria-label="Time"
+            title="What time this repeats at"
+            className="rounded-lg border border-edge bg-void p-2 text-sm outline-none focus:border-mana"
+          />
           <Btn variant="primary" onClick={addRoutine} disabled={busy || !rTitle.trim()}>
             <span className="flex items-center gap-1.5">
               <Plus className="h-4 w-4" /> Add
@@ -390,7 +393,7 @@ export function Calendar() {
             >
               <div className="min-w-0 flex-1">
                 <div className="text-sm font-semibold">{r.title}</div>
-                <div className="text-xs text-muted">{cadenceLabel(r)}</div>
+                <div className="text-xs text-muted">{routineScheduleLabel(r)}</div>
               </div>
               <button
                 onClick={() => void setRoutineActive(r.id, !r.active).then(load)}
